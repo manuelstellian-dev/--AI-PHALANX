@@ -1,0 +1,17 @@
+# ΛΕΩΝΙΔΑΣ-AI PHALANX - Chei Criptografice
+# ATENȚIE: Acest fișier conține chei secrete și NU TREBUIE încărcat în repository!
+# Fișierul real (spartan_keys.yaml) este generat de scripts/generate_keys.py
+
+# Cheia Master AES-256 (32 bytes = 64 caractere hex)
+MASTER_AES_KEY_HEX: "REPLACE_WITH_GENERATED_KEY"
+
+# Salt pentru KDF (Key Derivation Function)
+KDF_SALT_HEX: "REPLACE_WITH_GENERATED_SALT"
+
+# Hash pentru verificarea protocolului Thermopylae
+THERMOPYLAE_HASH: "REPLACE_WITH_GENERATED_HASH"
+
+# Metadata
+generated_at: "YYYY-MM-DD HH:MM:SS"
+version: "0.1.0"
+warning: "KEEP THIS FILE SECRET - DO NOT COMMIT TO VERSION CONTROL"
