@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ΛΕΩΝΙΔΑΣ-AI PHALANX - Fișiere de Securitate
+# CRITIC: Aceste fișiere conțin chei secrete și NU TREBUIE încărcate în repository
+config/spartan_keys.yaml
+data/encrypted_vault/
+data/encrypted_vault/**
+logs/
+*.log

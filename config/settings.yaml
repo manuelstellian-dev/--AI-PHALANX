@@ -1,0 +1,109 @@
+# ΛΕΩΝΙΔΑΣ-AI PHALANX - Configurare Principală
+# Fișier de configurare pentru Falanga Digitală
+
+system:
+  name: "ΛΕΩΝΙΔΑΣ-AI PHALANX"
+  motto: "ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)"
+  version: "0.1.0"
+  license: "MIT"
+
+# Configurare Hardware
+hardware:
+  cpu_cores: 4
+  npu_tops: 50  # TOPS alocare pentru Battle Oracle
+  memory_gb: 16
+  disk_gb: 100
+
+# Configurare Autentificare
+auth:
+  # Token-ul implicit (TREBUIE schimbat în producție!)
+  # Poate fi suprascris cu variabila de mediu SPARTA_AUTH_TOKEN
+  auth_token: "SPARTA300_SECRET_TOKEN"
+  token_expiry_hours: 24
+
+# Configurare Phalanx (Module Interne)
+phalanx:
+  # Helot - Monitorizare Resurse
+  helot:
+    resource_thresholds:
+      cpu_critical: 95.0      # % utilizare CPU critică
+      memory_critical: 90.0   # % utilizare memorie critică
+      disk_critical: 95.0     # % utilizare disc critică
+    monitoring_interval_sec: 5
+
+  # Agoge - Învățare Continuă
+  agoge:
+    learning_rate: 0.01
+    adaptation_range: [0.5, 2.0]  # Min/Max pentru factorul de adaptare
+    training_interval_sec: 60
+
+  # Krypteia - Monitorizare Amenințări
+  krypteia:
+    monitoring_enabled: true
+    monitoring_interval_sec: 5
+    threat_retention_hours: 24
+
+  # Thermopylae - Protocol Urgență
+  thermopylae:
+    survival_threshold: 0.95  # Prag critic pentru activare
+    thermopylae_armed: false  # PERICOL: Setează pe true pentru auto-distrugere activă
+    keys_path: "/config/spartan_keys.yaml"
+    vault_path: "/data/encrypted_vault"
+    base_path: "/home/runner/work/--AI-PHALANX/--AI-PHALANX"
+
+# Configurare Hoplites (Module de Acțiune)
+hoplites:
+  # Spartan Guard - Criptografie
+  spartan_guard:
+    encryption_algorithm: "AES-256-GCM"
+    key_derivation: "PBKDF2"
+    # Cheia master este încărcată din spartan_keys.yaml sau environment
+
+  # Shield Bearer - Air-Gap
+  shield_bearer:
+    airgap_mode: "strict"  # strict, permissive, disabled
+    allowed_connections: []  # Lista de conexiuni permise în modul permissive
+    firewall_check_enabled: true
+
+  # Battle Oracle - Predicții
+  battle_oracle:
+    npu_tops: 50
+    prediction_confidence_threshold: 0.7
+    simulation_default_iterations: 100
+
+  # Weapon Master - Acces Extern
+  weapon_master:
+    external_access_enabled: false  # PERICOL: Compromite Air-Gap
+    allowed_domains: []  # Domenii permise dacă accesul extern este activat
+    request_timeout_sec: 30
+
+  # Messenger - Comunicații
+  messenger:
+    encrypt_by_default: true
+    message_retention_hours: 168  # 7 zile
+    queue_max_size: 1000
+
+# Configurare API Server
+api:
+  host: "0.0.0.0"
+  port: 7300
+  workers: 1
+  log_level: "info"
+  cors_enabled: true
+  docs_enabled: true  # Swagger UI la /docs
+
+# Configurare Logging
+logging:
+  level: "INFO"
+  file_enabled: true
+  file_path: "logs/leonidas_{time}.log"
+  rotation: "100 MB"
+  retention_days: 10
+  format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>"
+
+# Configurare Securitate
+security:
+  strict_mode: true
+  validate_inputs: true
+  audit_log_enabled: true
+  sensitive_data_masking: true

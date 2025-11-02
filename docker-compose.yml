@@ -1,0 +1,122 @@
+# ΛΕΩΝΙΔΑΣ-AI PHALANX - Docker Compose Configuration
+# Orchestrare pentru Falanga Digitală și servicii de suport
+
+version: '3.8'
+
+services:
+  # Serviciul principal ΛΕΩΝΙΔΑΣ-AI
+  leonidas-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leonidas-core
+    image: leonidas-ai-phalanx:0.1.0
+    ports:
+      - "7300:7300"  # API Port
+    environment:
+      - SPARTA_AUTH_TOKEN=${SPARTA_AUTH_TOKEN:-SPARTA300_SECRET_TOKEN}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - sparta-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7300/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis-fortress
+      - postgres-armory
+
+  # Redis - Fortăreața Cache-ului de Memorie
+  redis-fortress:
+    image: redis:7-alpine
+    container_name: redis-fortress
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - sparta-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-sparta_redis_secret}
+
+  # PostgreSQL - Armurăria de Date Persistente
+  postgres-armory:
+    image: postgres:15-alpine
+    container_name: postgres-armory
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=leonidas_db
+      - POSTGRES_USER=leonidas
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sparta_postgres_secret}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sparta-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leonidas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prometheus - Monitorul Spartanilor
+  prometheus-monitor:
+    image: prom/prometheus:latest
+    container_name: prometheus-monitor
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - sparta-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    depends_on:
+      - leonidas-core
+
+  # Grafana - Oracolul de Vizualizare (opțional)
+  grafana-oracle:
+    image: grafana/grafana:latest
+    container_name: grafana-oracle
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-sparta_grafana_secret}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - sparta-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus-monitor
+
+networks:
+  sparta-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
