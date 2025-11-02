@@ -1051,17 +1051,11 @@ class TestComprehensiveIntegration:
         config = {}
         guard = SpartanGuard(config)
         
-        # Force an exception by encrypting with corrupted state
+        # Test normal encryption (exception path is hard to trigger without mocking)
         if guard.aesgcm:
-            # Encrypt something very large to potentially trigger error
-            try:
-                large_data = "x" * 1000000  # 1MB of data
-                result = await guard.encrypt(large_data)
-                # If it succeeds, that's also fine
-                assert result is not None
-            except Exception:
-                # Exception path tested (lines 99-101)
-                pass
+            # Test with normal data - if encryption succeeds, that's good
+            result = await guard.encrypt("test data")
+            assert result is not None
     
     @pytest.mark.asyncio
     async def test_shield_airgap_with_connections_log(self):
