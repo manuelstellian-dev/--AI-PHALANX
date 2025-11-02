@@ -35,7 +35,7 @@ async def get_metrics() -> Dict[str, Any]:
     metrics = {
         "timestamp": current_time,
         "system": "ΛΕΩΝΙΔΑΣ-AI PHALANX",
-        "uptime": current_time - server.app.state.get('start_time', current_time) if hasattr(server.app, 'state') else 0
+        "uptime": current_time - getattr(server.app.state, 'start_time', current_time) if hasattr(server.app, 'state') else 0
     }
     
     if server.leonidas_brain:

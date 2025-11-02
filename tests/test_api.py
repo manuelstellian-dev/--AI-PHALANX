@@ -220,3 +220,329 @@ class TestHealthRoutes:
         
         # Restabilește starea originală
         server.leonidas_brain = original_brain
+
+
+class TestCommandRoutes:
+    """Test suite pentru command routes."""
+    
+    @pytest.mark.asyncio
+    async def test_execute_command_no_processor(self):
+        """Test execute command când processor nu e inițializat."""
+        from api.routes.command import execute_command, TacticalCommand
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        command = TacticalCommand(type="status", payload={}, priority="normal")
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await execute_command(command, "test_token")
+        
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_execute_command_with_processor(self):
+        """Test execute command cu processor inițializat."""
+        from api.routes.command import execute_command, TacticalCommand
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează processor-ul pentru test
+        server.command_processor = processor
+        
+        command = TacticalCommand(type="status", payload={}, priority="normal")
+        result = await execute_command(command, "test_token")
+        
+        assert result['success']
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_get_system_status(self):
+        """Test obținere system status."""
+        from api.routes.command import get_system_status
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează processor-ul pentru test
+        server.command_processor = processor
+        
+        result = await get_system_status("test_token")
+        
+        assert result['success']
+        assert 'modules' in result
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_analyze_risk(self):
+        """Test analiză risc."""
+        from api.routes.command import analyze_risk, RiskAnalysisRequest
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează processor-ul pentru test
+        server.command_processor = processor
+        
+        request = RiskAnalysisRequest(
+            scenario_name="Test Scenario",
+            risk_factors=["factor1", "factor2"],
+            severity=0.7,
+            complexity=0.5,
+            available_resources=0.8
+        )
+        
+        result = await analyze_risk(request, "test_token")
+        
+        assert result['success']
+        assert 'result' in result
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_encrypt_data(self):
+        """Test criptare date."""
+        from api.routes.command import encrypt_data, EncryptionRequest
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează processor-ul pentru test
+        server.command_processor = processor
+        
+        request = EncryptionRequest(data="secret message")
+        result = await encrypt_data(request, "test_token")
+        
+        assert result['success']
+        assert 'encrypted_data' in result
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_check_airgap(self):
+        """Test verificare airgap."""
+        from api.routes.command import check_airgap
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}, 'airgap_mode': 'disabled'}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează processor-ul pentru test
+        server.command_processor = processor
+        
+        result = await check_airgap("test_token")
+        
+        assert result['success']
+        assert 'airgap_active' in result
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+
+
+class TestMetricsRoutes:
+    """Test suite pentru metrics routes."""
+    
+    @pytest.mark.asyncio
+    async def test_get_metrics_cache(self):
+        """Test cache pentru metrici."""
+        from api.routes.metrics import get_metrics
+        import api.server as server
+        from api.server import initialize_system
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_brain = server.leonidas_brain
+        
+        # Setează brain-ul pentru test
+        server.leonidas_brain = brain
+        
+        # Prima apelare
+        metrics1 = await get_metrics()
+        
+        # A doua apelare (ar trebui să folosească cache-ul)
+        metrics2 = await get_metrics()
+        
+        assert metrics1['timestamp'] == metrics2['timestamp']
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.leonidas_brain = original_brain
+    
+    @pytest.mark.asyncio
+    async def test_get_prometheus_metrics(self):
+        """Test metrici format Prometheus."""
+        from api.routes.metrics import get_prometheus_metrics
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_brain = server.leonidas_brain
+        
+        # Setează brain-ul pentru test
+        server.leonidas_brain = brain
+        
+        metrics = await get_prometheus_metrics("test_token")
+        
+        assert isinstance(metrics, str)
+        assert "leonidas_survival_probability" in metrics
+        assert "leonidas_cpu_percent" in metrics
+        assert "leonidas_lambda_tas" in metrics
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.leonidas_brain = original_brain
+    
+    @pytest.mark.asyncio
+    async def test_get_json_metrics(self):
+        """Test metrici format JSON."""
+        from api.routes.metrics import get_json_metrics
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_brain = server.leonidas_brain
+        
+        # Setează brain-ul pentru test
+        server.leonidas_brain = brain
+        
+        metrics = await get_json_metrics("test_token")
+        
+        assert isinstance(metrics, dict)
+        assert 'timestamp' in metrics
+        assert 'system' in metrics
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.leonidas_brain = original_brain
+    
+    @pytest.mark.asyncio
+    async def test_get_metrics_no_brain(self):
+        """Test metrici când brain nu e inițializat."""
+        from api.routes.metrics import get_metrics
+        import api.server as server
+        
+        # Salvează starea originală
+        original_brain = server.leonidas_brain
+        
+        # Setează la None pentru test
+        server.leonidas_brain = None
+        
+        metrics = await get_metrics()
+        
+        assert 'timestamp' in metrics
+        assert 'system' in metrics
+        
+        # Restabilește starea originală
+        server.leonidas_brain = original_brain
+    
+    @pytest.mark.asyncio
+    async def test_get_metrics_all_modules(self):
+        """Test metrici cu toate modulele."""
+        from api.routes.metrics import get_metrics
+        from api.server import initialize_system
+        import api.server as server
+        
+        # Inițializează sistemul
+        config = {'hardware': {'cpu_cores': 4}}
+        brain, processor = await initialize_system(config)
+        
+        # Salvează starea originală
+        original_brain = server.leonidas_brain
+        
+        # Setează brain-ul pentru test
+        server.leonidas_brain = brain
+        
+        # Așteaptă puțin pentru a permite cache-ului să expire
+        import api.routes.metrics as metrics_module
+        metrics_module._last_update = 0  # Forțează refresh
+        
+        metrics = await get_metrics()
+        
+        # Verifică că metricile sunt prezente
+        assert 'survival_probability' in metrics
+        assert 'cpu_percent' in metrics
+        assert 'memory_percent' in metrics
+        assert 'adaptation_factor' in metrics
+        assert 'threat_level' in metrics
+        
+        # Cleanup
+        await brain.shutdown()
+        
+        # Restabilește starea originală
+        server.leonidas_brain = original_brain
