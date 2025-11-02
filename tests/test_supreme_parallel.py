@@ -513,9 +513,11 @@ class TestPhalanxExecutor:
         assert metrici['t_parallel'] > 0
         assert metrici['speedup'] > 0
         
-        # Speedup-ul ar trebui să fie pozitiv pentru task-uri CPU-intensive
-        # (spawn overhead în CI poate reduce speedup-ul semnificativ)
-        assert metrici['speedup'] > 0.05  # Very relaxed pentru CI environments cu spawn
+        # Speedup threshold is very relaxed (0.05) due to spawn overhead in CI environments.
+        # The 'spawn' method creates new Python processes which adds significant overhead,
+        # especially for small tasks. In production with larger tasks, speedup is much higher.
+        # This test validates the execution mechanics, not absolute performance.
+        assert metrici['speedup'] > 0.05
     
     def test_map_parallel(self):
         """Test map paralel."""
@@ -1330,8 +1332,8 @@ class TestKronosFormulaVerification:
             print(f"  Efficiency (measured) = {metrici['speedup'] / 2:.2%}")
             print(f"  Efficiency (Kronos) = {metrikos.efficiency:.2%}")
             
-            # Verificări (very relaxed pentru CI cu spawn overhead)
-            assert metrici['speedup'] > 0.05  # Pozitiv speedup (spawn overhead în CI)
+            # Speedup validation is relaxed due to spawn overhead in CI (see test_execute_tasks_speedup_measurement)
+            assert metrici['speedup'] > 0.05
             assert metrikos.speedup > 0
     
     def test_speedup_scaling_with_cores(self):
@@ -1424,7 +1426,7 @@ class TestPhalanxExecutorExceptions:
         tasks = [1, 2, 3, 4]
         results, metrici = executor.execute_tasks(failing_task, tasks, use_parallel=True)
         
-        # Ar trebui să conțină None pentru task-urile eșuate (lines 183-186)
+        # Ar trebui să conțină None pentru task-urile eșuate
         assert len(results) == 4
         assert None in results  # Task-urile pare au eșuat
     
@@ -1440,7 +1442,7 @@ class TestPhalanxExecutorExceptions:
         tasks = [1, 2, 3]
         results, metrici = executor.execute_tasks(failing_task, tasks, use_parallel=False)
         
-        # Ar trebui să conțină None pentru task-ul eșuat (lines 215-217)
+        # Ar trebui să conțină None pentru task-ul eșuat
         assert len(results) == 3
         assert None in results
     
@@ -1450,7 +1452,7 @@ class TestPhalanxExecutorExceptions:
         
         future = executor.submit_task(simple_computation, 5)
         
-        # Future ar trebui să fie valid (lines 272-277)
+        # Future ar trebui să fie valid
         assert future is not None
         
         # Așteptăm rezultatul
@@ -1470,14 +1472,14 @@ class TestPhalanxExecutorExceptions:
         """Test validare max_workers < 1."""
         config = PhalanxConfig(max_workers=0, auto_detect_cores=False)
         
-        # Ar trebui să ajusteze la 1 (lines 51-52)
+        # Ar trebui să ajusteze la 1
         assert config.max_workers == 1
     
     def test_phalanx_config_validation_chunk_size(self):
         """Test validare chunk_size < 1."""
         config = PhalanxConfig(chunk_size=0)
         
-        # Ar trebui să ajusteze la 1 (lines 56-57)
+        # Ar trebui să ajusteze la 1
         assert config.chunk_size == 1
 
 
@@ -1488,7 +1490,7 @@ class TestTaskSchedulerExceptions:
         """Test remove_task cu task inexistent."""
         graph = DependencyGraph()
         
-        # Încearcă să elimine un task care nu există (lines 130-131)
+        # Încearcă să elimine un task care nu există
         graph.remove_task("nonexistent_task")
         
         # Nu ar trebui să arunce excepție, doar warning
@@ -1502,7 +1504,7 @@ class TestTaskSchedulerExceptions:
         task = Task(task_id="task1", func=simple_computation, dependencies={"missing_task"})
         graph.add_task(task)
         
-        # Ar trebui să detecteze ciclul sau dependența lipsă (lines 215-216)
+        # Ar trebui să detecteze ciclul sau dependența lipsă
         try:
             sorted_order = graph.topological_sort()
             # Ar putea sau nu să eșueze în funcție de implementare
@@ -1521,7 +1523,7 @@ class TestTaskSchedulerExceptions:
         graph.add_task(task1)
         graph.add_task(task2)
         
-        # Ar trebui să detecteze ciclul (lines 215-216)
+        # Ar trebui să detecteze ciclul
         with pytest.raises(ValueError):
             graph.get_execution_levels()
     
@@ -1531,7 +1533,7 @@ class TestTaskSchedulerExceptions:
         
         deps = graph.get_dependencies("nonexistent")
         
-        # Ar trebui să returneze listă goală (lines 262-263)
+        # Ar trebui să returneze listă goală
         assert deps == []
     
     def test_get_dependents_nonexistent_task(self):
@@ -1555,7 +1557,7 @@ class TestTaskSchedulerExceptions:
         
         results = scheduler.execute_sequential()
         
-        # Task2 ar trebui să fie în failed_tasks (lines 355-358)
+        # Task2 ar trebui să fie în failed_tasks
         assert "task2" in scheduler.failed_tasks
         assert results["task2"] is None
         

@@ -16,10 +16,11 @@ from loguru import logger
 
 # Fix for Python 3.12+ multiprocessing fork deprecation warning
 # Set spawn method to avoid fork() deadlocks in multi-threaded environments
+# Note: This is set here for production code. tests/conftest.py handles the test environment.
 try:
     multiprocessing.set_start_method('spawn', force=False)
 except RuntimeError:
-    # Method already set, ignore
+    # Method already set (e.g., by conftest.py in tests), ignore
     pass
 
 
