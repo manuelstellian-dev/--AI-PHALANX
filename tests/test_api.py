@@ -73,6 +73,81 @@ class TestAPIServer:
         
         # Cleanup
         await brain.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_lifespan_context_startup(self):
+        """Test API server lifespan startup code."""
+        from api.server import lifespan, load_config
+        from fastapi import FastAPI
+        import api.server as server
+        
+        # Create app
+        app = FastAPI()
+        
+        # Save original state
+        original_brain = server.leonidas_brain
+        original_processor = server.command_processor
+        original_config = server.config
+        
+        try:
+            # Test lifespan startup
+            async with lifespan(app):
+                # Verify that modules were initialized
+                assert server.leonidas_brain is not None
+                assert server.command_processor is not None
+                assert isinstance(server.config, dict)
+                assert 'system' in server.config
+        finally:
+            # Restore original state
+            server.leonidas_brain = original_brain
+            server.command_processor = original_processor
+            server.config = original_config
+    
+    @pytest.mark.asyncio
+    async def test_lifespan_context_shutdown(self):
+        """Test API server lifespan shutdown code."""
+        from api.server import lifespan
+        from fastapi import FastAPI
+        import api.server as server
+        
+        # Create app
+        app = FastAPI()
+        
+        # Save original state
+        original_brain = server.leonidas_brain
+        original_processor = server.command_processor
+        original_config = server.config
+        
+        try:
+            # Test lifespan with shutdown
+            async with lifespan(app):
+                # Store references to check they were cleaned up
+                brain_ref = server.leonidas_brain
+                assert brain_ref is not None
+            
+            # After context exit, shutdown should have been called
+            # (we can't easily verify this without mocking, but at least we tested the code path)
+        finally:
+            # Restore original state
+            server.leonidas_brain = original_brain
+            server.command_processor = original_processor
+            server.config = original_config
+    
+    @pytest.mark.asyncio
+    async def test_root_endpoint(self):
+        """Test root endpoint structure."""
+        from api.server import app
+        from httpx import AsyncClient
+        
+        async with AsyncClient(app=app, base_url="http://test") as client:
+            response = await client.get("/")
+            
+            assert response.status_code == 200
+            data = response.json()
+            assert data['system'] == "ΛΕΩΝΙΔΑΣ-AI PHALANX"
+            assert data['motto'] == "ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)"
+            assert data['version'] == "0.1.0"
+            assert data['status'] == "online"
 
 
 class TestHealthRoutes:
