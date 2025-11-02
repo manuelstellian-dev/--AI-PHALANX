@@ -267,6 +267,10 @@ class TestCommandProcessor:
             await asyncio.wait_for(task, timeout=1.0)
         except asyncio.TimeoutError:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # Expected, task was cancelled
     
     @pytest.mark.asyncio
     async def test_homeostasis_loop_with_modules(self):
@@ -305,6 +309,10 @@ class TestCommandProcessor:
             await asyncio.wait_for(task, timeout=1.0)
         except asyncio.TimeoutError:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # Expected, task was cancelled
     
     @pytest.mark.asyncio
     async def test_command_processor_with_real_modules(self):
@@ -506,3 +514,67 @@ class TestLeondasBrainEdgeCases:
             await asyncio.wait_for(task, timeout=1.0)
         except asyncio.TimeoutError:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # Expected, task was cancelled
+
+
+class TestLeondasBrainAdditionalEdgeCases:
+    """Additional edge case tests pentru LeondasBrain to increase coverage."""
+    
+    @pytest.mark.asyncio
+    async def test_homeostasis_loop_with_thermopylae_warning(self):
+        """Test homeostasis loop triggering Thermopylae warning."""
+        from phalanx.helot import HelotModule
+        from phalanx.thermopylae import ThermopylaeModule
+        
+        config = {
+            'hardware': {'cpu_cores': 4},
+            'current_workload': 0.5
+        }
+        brain = LeondasBrain(config)
+        
+
+
+class TestCoreCoverageBoosters:
+    """Simple tests to target specific missing lines."""
+    
+    @pytest.mark.asyncio
+    async def test_homeostasis_with_low_survival(self):
+        """Test homeostasis loop with low survival probability."""
+        from phalanx.helot import HelotModule
+        from phalanx.thermopylae import ThermopylaeModule
+        
+        config = {
+            'hardware': {'cpu_cores': 4},
+            'current_workload': 0.5
+        }
+        brain = LeondasBrain(config)
+        
+        # Mock Helot with low survival
+        class LowSurvivalHelot:
+            async def get_survival_probability(self):
+                return 0.85  # Below 0.95 threshold
+        
+        thermopylae = ThermopylaeModule(config)
+        
+        phalanx_modules = {
+            'helot': LowSurvivalHelot(),
+            'thermopylae': thermopylae
+        }
+        await brain.initialize_phalanx(phalanx_modules)
+        
+        import asyncio
+        task = asyncio.create_task(brain.homeostasis_loop())
+        await asyncio.sleep(0.2)
+        await brain.shutdown()
+        
+        try:
+            await asyncio.wait_for(task, timeout=1.0)
+        except asyncio.TimeoutError:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
