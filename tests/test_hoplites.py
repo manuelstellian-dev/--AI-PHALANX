@@ -578,3 +578,135 @@ class TestMessenger:
         
         assert result['success']
         assert result['processed'] == 0
+    
+    @pytest.mark.asyncio
+    async def test_shield_bearer_check_network_connections(self):
+        """Test verificare conexiuni de rețea."""
+        config = {}
+        shield = ShieldBearer(config)
+        
+        connections = await shield._check_network_connections()
+        
+        assert isinstance(connections, list)
+    
+    @pytest.mark.asyncio
+    async def test_shield_bearer_strict_mode_with_connections(self):
+        """Test mod strict Air-Gap."""
+        config = {'airgap_mode': 'strict'}
+        shield = ShieldBearer(config)
+        
+        # În mod strict, orice conexiune e problematică
+        is_secure = await shield.check_airgap()
+        
+        # Rezultatul depinde de conexiunile reale ale sistemului
+        assert isinstance(is_secure, bool)
+    
+    @pytest.mark.asyncio
+    async def test_spartan_guard_encryption_without_associated_data(self):
+        """Test criptare fără date asociate."""
+        config = {}
+        guard = SpartanGuard(config)
+        
+        plaintext = "Test message"
+        encrypted = await guard.encrypt(plaintext)
+        decrypted = await guard.decrypt(encrypted)
+        
+        assert decrypted == plaintext
+    
+    @pytest.mark.asyncio
+    async def test_spartan_guard_hash_consistency(self):
+        """Test consistență hash."""
+        config = {}
+        guard = SpartanGuard(config)
+        
+        data = "test data"
+        hash1 = await guard.hash_data(data)
+        hash2 = await guard.hash_data(data)
+        hash3 = await guard.hash_data(data + " modified")
+        
+        assert hash1 == hash2
+        assert hash1 != hash3
+    
+    @pytest.mark.asyncio
+    async def test_battle_oracle_complex_scenario(self):
+        """Test scenarii complexe Battle Oracle."""
+        config = {}
+        oracle = BattleOracle(config)
+        
+        # Scenariu complex
+        result = await oracle.analyze_risk({
+            'name': 'Complex Operation',
+            'risk_factors': ['factor1', 'factor2', 'factor3', 'factor4'],
+            'severity': 0.7,
+            'available_resources': 0.8,
+            'complexity': 0.6,
+            'time_pressure': 0.4
+        })
+        
+        assert result['threat_level'] in ['low', 'medium', 'high', 'critical']
+        assert 'success_probability' in result
+        assert 'recommended_action' in result
+    
+    @pytest.mark.asyncio
+    async def test_messenger_receive_without_guard(self):
+        """Test primire mesaj fără Guard."""
+        config = {}
+        messenger = Messenger(config, spartan_guard=None)
+        
+        result = await messenger.receive_message('test_message')
+        
+        assert result['success']
+        assert result['content'] == 'test_message'
+    
+    @pytest.mark.asyncio
+    async def test_messenger_send_without_guard(self):
+        """Test trimitere mesaj fără Guard când encryption e cerută."""
+        config = {}
+        messenger = Messenger(config, spartan_guard=None)
+        
+        result = await messenger.send_secure_message({
+            'recipient': 'test',
+            'content': 'message',
+            'encrypt': True  # Cere encryption dar nu are Guard
+        })
+        
+        # Ar trebui să trimită fără criptare
+        assert result['success']
+        assert not result['encrypted']
+    
+    @pytest.mark.asyncio
+    async def test_weapon_master_request_counting(self):
+        """Test numărare cereri externe."""
+        config = {'external_access_enabled': True}
+        weapon = WeaponMaster(config)
+        
+        initial_count = weapon.request_count
+        
+        await weapon.execute_external_query({
+            'type': 'http_get',
+            'target': 'https://example.com'
+        })
+        
+        assert weapon.request_count == initial_count + 1
+    
+    @pytest.mark.asyncio
+    async def test_shield_bearer_iptables_check(self):
+        """Test verificare iptables."""
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield._check_iptables()
+        
+        assert 'firewall_active' in result
+        assert result['platform'] == 'Linux'
+    
+    @pytest.mark.asyncio
+    async def test_shield_bearer_windows_firewall_check(self):
+        """Test verificare Windows Firewall."""
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield._check_windows_firewall()
+        
+        assert 'firewall_active' in result
+        assert result['platform'] == 'Windows'

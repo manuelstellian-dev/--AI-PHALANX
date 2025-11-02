@@ -242,3 +242,182 @@ class TestCommandProcessor:
         
         assert not result['success']
         assert 'Agoge' in result['error']
+    
+    @pytest.mark.asyncio
+    async def test_homeostasis_loop_basic(self):
+        """Test bucla de homeostazie simplă."""
+        config = {
+            'hardware': {'cpu_cores': 4},
+            'current_workload': 0.5
+        }
+        brain = LeondasBrain(config)
+        
+        # Pornește bucla
+        import asyncio
+        task = asyncio.create_task(brain.homeostasis_loop())
+        
+        # Așteaptă puțin
+        await asyncio.sleep(0.5)
+        
+        # Oprește bucla
+        await brain.shutdown()
+        
+        # Așteaptă ca task-ul să se termine
+        try:
+            await asyncio.wait_for(task, timeout=1.0)
+        except asyncio.TimeoutError:
+            task.cancel()
+    
+    @pytest.mark.asyncio
+    async def test_homeostasis_loop_with_modules(self):
+        """Test bucla cu module Phalanx."""
+        from phalanx.helot import HelotModule
+        from phalanx.thermopylae import ThermopylaeModule
+        
+        config = {
+            'hardware': {'cpu_cores': 4},
+            'current_workload': 0.5
+        }
+        brain = LeondasBrain(config)
+        
+        # Inițializează module
+        helot = HelotModule(config)
+        thermopylae = ThermopylaeModule(config)
+        
+        phalanx_modules = {
+            'helot': helot,
+            'thermopylae': thermopylae
+        }
+        await brain.initialize_phalanx(phalanx_modules)
+        
+        # Pornește bucla
+        import asyncio
+        task = asyncio.create_task(brain.homeostasis_loop())
+        
+        # Așteaptă puțin
+        await asyncio.sleep(0.5)
+        
+        # Oprește bucla
+        await brain.shutdown()
+        
+        # Așteaptă ca task-ul să se termine
+        try:
+            await asyncio.wait_for(task, timeout=1.0)
+        except asyncio.TimeoutError:
+            task.cancel()
+    
+    @pytest.mark.asyncio
+    async def test_command_processor_with_real_modules(self):
+        """Test command processor cu module reale."""
+        from phalanx.agoge import AgogeModule
+        from hoplites.spartanguard import SpartanGuard
+        
+        agoge = AgogeModule({})
+        guard = SpartanGuard({})
+        
+        modules = {
+            'phalanx': {'agoge': agoge},
+            'hoplites': {'guard': guard}
+        }
+        processor = CommandProcessor(modules)
+        
+        # Test training
+        result = await processor.process_command({
+            'type': 'train_agoge',
+            'payload': {'data': 'test'}
+        })
+        
+        assert result['success']
+        assert 'result' in result
+    
+    @pytest.mark.asyncio
+    async def test_command_processor_encryption_with_real_guard(self):
+        """Test encryption cu Spartan Guard real."""
+        from hoplites.spartanguard import SpartanGuard
+        
+        guard = SpartanGuard({})
+        
+        modules = {
+            'phalanx': {},
+            'hoplites': {'guard': guard}
+        }
+        processor = CommandProcessor(modules)
+        
+        result = await processor.process_command({
+            'type': 'encrypt_data',
+            'payload': {'data': 'secret message'}
+        })
+        
+        assert result['success']
+        assert 'encrypted_data' in result
+    
+    @pytest.mark.asyncio
+    async def test_command_processor_message_with_real_messenger(self):
+        """Test send message cu Messenger real."""
+        from hoplites.messenger import Messenger
+        
+        messenger = Messenger({})
+        
+        modules = {
+            'phalanx': {},
+            'hoplites': {'messenger': messenger}
+        }
+        processor = CommandProcessor(modules)
+        
+        result = await processor.process_command({
+            'type': 'send_message',
+            'payload': {
+                'recipient': 'test',
+                'content': 'message',
+                'encrypt': False
+            }
+        })
+        
+        assert result['success']
+        assert 'result' in result
+    
+    @pytest.mark.asyncio
+    async def test_command_processor_airgap_with_real_shield(self):
+        """Test airgap check cu Shield real."""
+        from hoplites.shieldbearer import ShieldBearer
+        
+        shield = ShieldBearer({'airgap_mode': 'disabled'})
+        
+        modules = {
+            'phalanx': {},
+            'hoplites': {'shield': shield}
+        }
+        processor = CommandProcessor(modules)
+        
+        result = await processor.process_command({
+            'type': 'check_airgap',
+            'payload': {}
+        })
+        
+        assert result['success']
+        assert 'airgap_active' in result
+    
+    @pytest.mark.asyncio
+    async def test_command_processor_risk_analysis_with_real_oracle(self):
+        """Test risk analysis cu Battle Oracle real."""
+        from hoplites.battleoracle import BattleOracle
+        
+        oracle = BattleOracle({})
+        
+        modules = {
+            'phalanx': {},
+            'hoplites': {'oracle': oracle}
+        }
+        processor = CommandProcessor(modules)
+        
+        result = await processor.process_command({
+            'type': 'analyze_risk',
+            'payload': {
+                'name': 'Test Scenario',
+                'severity': 0.5,
+                'risk_factors': ['factor1']
+            }
+        })
+        
+        assert result['success']
+        assert 'result' in result

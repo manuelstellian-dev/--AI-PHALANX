@@ -334,3 +334,39 @@ class TestThermopylaeModule:
         await thermopylae.activate_protocol()
         
         assert thermopylae.protocol_activated
+    
+    @pytest.mark.asyncio
+    async def test_thermopylae_destroy_keys_file_not_found(self):
+        """Test distrugere chei când fișierul nu există."""
+        config = {
+            'keys_path': '/nonexistent/path.yaml',
+            'base_path': '/tmp'
+        }
+        thermopylae = ThermopylaeModule(config)
+        
+        # Ar trebui să ruleze fără erori chiar dacă fișierul nu există
+        await thermopylae._destroy_cryptographic_keys()
+    
+    @pytest.mark.asyncio
+    async def test_thermopylae_destroy_vault_not_found(self):
+        """Test distrugere vault când directorul nu există."""
+        config = {
+            'vault_path': '/nonexistent/vault',
+            'base_path': '/tmp'
+        }
+        thermopylae = ThermopylaeModule(config)
+        
+        # Ar trebui să ruleze fără erori chiar dacă directorul nu există
+        await thermopylae._destroy_encrypted_vault()
+    
+    @pytest.mark.asyncio
+    async def test_thermopylae_config_paths(self):
+        """Test configurare căi pentru protocol."""
+        config = {
+            'survival_threshold': 0.90,
+            'thermopylae_armed': False
+        }
+        thermopylae = ThermopylaeModule(config)
+        
+        assert thermopylae.critical_threshold == 0.90
+        assert not thermopylae.is_armed
