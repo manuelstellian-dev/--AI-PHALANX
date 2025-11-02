@@ -1486,6 +1486,62 @@ class TestPhalanxExecutorExceptions:
 class TestTaskSchedulerExceptions:
     """Test exception handling în Task Scheduler."""
     
+    def test_remove_task_with_dependencies(self):
+        """Test removing a task that other tasks depend on."""
+        graph = DependencyGraph()
+        
+        # Create tasks with dependencies
+        task1 = Task(task_id="task1", func=simple_computation)
+        task2 = Task(task_id="task2", func=simple_computation, dependencies={"task1"})
+        
+        graph.add_task(task1)
+        graph.add_task(task2)
+        
+        # Remove task1 (which task2 depends on)
+        graph.remove_task("task1")
+        
+        # task1 should be removed from task2's dependencies (lines 141-142)
+        assert "task1" not in graph.tasks
+        # task2 should still exist but task1 removed from its dependencies
+        assert "task2" in graph.tasks
+    
+    def test_remove_task_clears_reverse_adjacency(self):
+        """Test that removing a task clears reverse adjacency."""
+        graph = DependencyGraph()
+        
+        task1 = Task(task_id="task1", func=simple_computation)
+        task2 = Task(task_id="task2", func=simple_computation, dependencies={"task1"})
+        
+        graph.add_task(task1)
+        graph.add_task(task2)
+        
+        # task2 should have task1 in its reverse_adjacency
+        assert "task2" in graph.reverse_adjacency
+        assert "task1" in graph.reverse_adjacency["task2"]
+        
+        # Remove task2
+        graph.remove_task("task2")
+        
+        # task2 should be removed from reverse_adjacency (lines 144-145)
+        assert "task2" not in graph.reverse_adjacency
+    
+    def test_execute_sequential_skip_missing_task(self):
+        """Test sequential execution skips missing tasks."""
+        scheduler = TaskScheduler()
+        
+        scheduler.add_task(task_id="task1", func=simple_computation, args=(5,))
+        scheduler.add_task(task_id="task2", func=simple_computation, args=(10,))
+        
+        # Manually remove task1 from graph (simulating missing task)
+        del scheduler.graph.tasks["task1"]
+        
+        # Execute should skip missing task (line 349)
+        results = scheduler.execute_sequential()
+        
+        # task2 should still execute
+        assert "task2" in results
+        assert results["task2"] is not None
+    
     def test_remove_nonexistent_task(self):
         """Test remove_task cu task inexistent."""
         graph = DependencyGraph()

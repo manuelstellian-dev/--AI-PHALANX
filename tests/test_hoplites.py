@@ -1207,6 +1207,49 @@ class TestShieldBearerAdditionalCoverage:
     """Additional tests to reach 100% coverage for ShieldBearer."""
     
     @pytest.mark.asyncio
+    async def test_airgap_unknown_mode(self, monkeypatch):
+        """Test Air-Gap with unknown/invalid mode."""
+        import psutil
+        
+        # Mock no connections
+        def mock_net_connections(*args, **kwargs):
+            return []
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {'airgap_mode': 'unknown_mode'}
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should return True as fallback (line 61)
+        assert result is True
+    
+    @pytest.mark.asyncio
+    async def test_windows_firewall_on(self, monkeypatch):
+        """Test Windows firewall check with firewall ON."""
+        import subprocess
+        
+        # Mock successful Windows firewall check with ON status
+        class MockResult:
+            returncode = 0
+            stdout = "Domain Profile Settings:\nState: ON\n"
+        
+        def mock_run(*args, **kwargs):
+            return MockResult()
+        
+        monkeypatch.setattr(subprocess, 'run', mock_run)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield._check_windows_firewall()
+        
+        # Should detect firewall is ON (line 151-152)
+        assert result['firewall_active'] is True
+        assert result['rules_configured'] is True
+    
+    @pytest.mark.asyncio
     async def test_check_network_connections_import_error(self, monkeypatch):
         """Test network connections check when psutil ImportError occurs."""
         import psutil

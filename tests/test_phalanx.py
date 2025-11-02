@@ -651,6 +651,40 @@ class TestHelotAdditionalEdgeCases:
         
         # Should complete without error
         assert True
+    
+    @pytest.mark.asyncio
+    async def test_calculate_survival_with_critical_cpu(self, monkeypatch):
+        """Test survival calculation with critical CPU usage."""
+        import psutil
+        
+        # Mock critical CPU usage (>90%)
+        def mock_cpu_percent(*args, **kwargs):
+            return 95.0
+        
+        def mock_virtual_memory():
+            class MemInfo:
+                percent = 50.0
+            return MemInfo()
+        
+        monkeypatch.setattr(psutil, 'cpu_percent', mock_cpu_percent)
+        monkeypatch.setattr(psutil, 'virtual_memory', mock_virtual_memory)
+        
+        config = {}
+        helot = HelotModule(config)
+        
+        # Create resources dict with critical CPU (>95%)
+        resources = {
+            'cpu_percent': 96.0,  # Above critical threshold of 95.0
+            'memory_percent': 50.0,
+            'disk_percent': 50.0
+        }
+        
+        # Calculate survival probability
+        probability = helot._calculate_survival_probability(resources)
+        
+        # Should penalize for critical CPU (line 101)
+        assert probability < 1.0
+        assert probability == 0.9  # 1.0 - 0.1 penalty
 
 
 

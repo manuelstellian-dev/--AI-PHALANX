@@ -723,6 +723,31 @@ class TestCommandRoutesFullCoverage:
         server.command_processor = original_processor
 
 
+class TestAPIServerConfigLoading:
+    """Test configuration loading edge cases."""
+    
+    def test_load_config_file_exception(self, monkeypatch):
+        """Test load_config with file read exception."""
+        from api.server import load_config
+        import os
+        
+        # Mock os.path.exists to return True but open fails
+        def mock_exists(path):
+            return True
+        
+        def mock_open(*args, **kwargs):
+            raise PermissionError("Cannot read file")
+        
+        monkeypatch.setattr(os.path, 'exists', mock_exists)
+        monkeypatch.setattr('builtins.open', mock_open)
+        
+        # Should handle exception and return default config (lines 123-124)
+        config = load_config()
+        
+        assert 'system' in config
+        assert config['system']['name'] == "ΛΕΩΝΙΔΑΣ-AI PHALANX"
+
+
 class TestAPIServerEdgeCases:
     """Test edge cases pentru API Server."""
     
