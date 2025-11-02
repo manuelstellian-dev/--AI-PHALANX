@@ -14,6 +14,14 @@ import time
 import os
 from loguru import logger
 
+# Fix for Python 3.12+ multiprocessing fork deprecation warning
+# Set spawn method to avoid fork() deadlocks in multi-threaded environments
+try:
+    multiprocessing.set_start_method('spawn', force=False)
+except RuntimeError:
+    # Method already set, ignore
+    pass
+
 
 @dataclass
 class PhalanxConfig:

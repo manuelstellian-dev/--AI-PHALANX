@@ -169,11 +169,11 @@ class ShieldBearer:
         Returns:
             True dacă conexiunea este posibilă
         """
+        sock = None
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(timeout)
             result = sock.connect_ex((host, port))
-            sock.close()
             
             can_connect = result == 0
             if can_connect:
@@ -186,6 +186,9 @@ class ShieldBearer:
         except Exception as e:
             logger.debug(f"External access test error: {e}")
             return False
+        finally:
+            if sock:
+                sock.close()
 
     async def get_status(self) -> Dict[str, Any]:
         """
