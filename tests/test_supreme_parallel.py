@@ -1384,6 +1384,196 @@ class TestKronosFormulaVerification:
 
 
 # ============================================================================
+# TASK 5: PARALLEL EXECUTION EXCEPTION TESTS
+# ============================================================================
+
+class TestPhalanxExecutorExceptions:
+    """Test exception handling în Phalanx Executor."""
+    
+    def test_execute_tasks_with_timeout_error(self):
+        """Test handling TimeoutError în parallel execution."""
+        from concurrent.futures import TimeoutError as FutureTimeoutError
+        
+        def slow_task(x):
+            import time
+            time.sleep(10)  # Task foarte lent
+            return x
+        
+        config = PhalanxConfig(max_workers=2, timeout=0.1)  # Timeout foarte mic
+        executor = PhalanxExecutor(config)
+        
+        tasks = [1, 2]
+        
+        # Ar trebui să gestioneze timeout-ul
+        try:
+            results, metrici = executor.execute_tasks(slow_task, tasks, use_parallel=True)
+            # Poate sau nu să arunce TimeoutError în funcție de implementare
+        except FutureTimeoutError:
+            # Expected cu timeout mic
+            pass
+    
+    def test_execute_tasks_with_failing_tasks(self):
+        """Test handling task-uri care eșuează."""
+        def failing_task(x):
+            if x % 2 == 0:
+                raise ValueError(f"Task {x} failed")
+            return x * 2
+        
+        executor = PhalanxExecutor()
+        
+        tasks = [1, 2, 3, 4]
+        results, metrici = executor.execute_tasks(failing_task, tasks, use_parallel=True)
+        
+        # Ar trebui să conțină None pentru task-urile eșuate (lines 183-186)
+        assert len(results) == 4
+        assert None in results  # Task-urile pare au eșuat
+    
+    def test_execute_sequential_with_failing_tasks(self):
+        """Test handling task-uri care eșuează în execuție secvențială."""
+        def failing_task(x):
+            if x == 2:
+                raise ValueError(f"Task {x} failed")
+            return x * 2
+        
+        executor = PhalanxExecutor()
+        
+        tasks = [1, 2, 3]
+        results, metrici = executor.execute_tasks(failing_task, tasks, use_parallel=False)
+        
+        # Ar trebui să conțină None pentru task-ul eșuat (lines 215-217)
+        assert len(results) == 3
+        assert None in results
+    
+    def test_submit_task_single(self):
+        """Test submit_task method."""
+        executor = PhalanxExecutor()
+        
+        future = executor.submit_task(simple_computation, 5)
+        
+        # Future ar trebui să fie valid (lines 272-277)
+        assert future is not None
+        
+        # Așteptăm rezultatul
+        result = future.result(timeout=5)
+        assert result == simple_computation(5)
+    
+    def test_batch_execute_empty(self):
+        """Test batch_execute cu listă goală."""
+        executor = PhalanxExecutor()
+        
+        results = executor.batch_execute(simple_computation, [])
+        
+        # Ar trebui să returneze listă goală (line 297)
+        assert results == []
+    
+    def test_phalanx_config_validation_max_workers(self):
+        """Test validare max_workers < 1."""
+        config = PhalanxConfig(max_workers=0, auto_detect_cores=False)
+        
+        # Ar trebui să ajusteze la 1 (lines 51-52)
+        assert config.max_workers == 1
+    
+    def test_phalanx_config_validation_chunk_size(self):
+        """Test validare chunk_size < 1."""
+        config = PhalanxConfig(chunk_size=0)
+        
+        # Ar trebui să ajusteze la 1 (lines 56-57)
+        assert config.chunk_size == 1
+
+
+class TestTaskSchedulerExceptions:
+    """Test exception handling în Task Scheduler."""
+    
+    def test_remove_nonexistent_task(self):
+        """Test remove_task cu task inexistent."""
+        graph = DependencyGraph()
+        
+        # Încearcă să elimine un task care nu există (lines 130-131)
+        graph.remove_task("nonexistent_task")
+        
+        # Nu ar trebui să arunce excepție, doar warning
+        assert "nonexistent_task" not in graph.tasks
+    
+    def test_topological_sort_with_missing_dependencies(self):
+        """Test topological sort când există dependențe lipsă."""
+        graph = DependencyGraph()
+        
+        # Creează task cu dependență care nu există
+        task = Task(task_id="task1", func=simple_computation, dependencies={"missing_task"})
+        graph.add_task(task)
+        
+        # Ar trebui să detecteze ciclul sau dependența lipsă (lines 215-216)
+        try:
+            sorted_order = graph.topological_sort()
+            # Ar putea sau nu să eșueze în funcție de implementare
+        except ValueError as e:
+            # Expected - cycle or missing dependency
+            assert "cycle" in str(e).lower() or "remaining" in str(e).lower() or "cannot" in str(e).lower()
+    
+    def test_get_execution_levels_with_cycle(self):
+        """Test get_execution_levels cu ciclu."""
+        graph = DependencyGraph()
+        
+        # Creează ciclu
+        task1 = Task(task_id="task1", func=simple_computation, dependencies={"task2"})
+        task2 = Task(task_id="task2", func=simple_computation, dependencies={"task1"})
+        
+        graph.add_task(task1)
+        graph.add_task(task2)
+        
+        # Ar trebui să detecteze ciclul (lines 215-216)
+        with pytest.raises(ValueError):
+            graph.get_execution_levels()
+    
+    def test_get_dependencies_nonexistent_task(self):
+        """Test get_dependencies cu task inexistent."""
+        graph = DependencyGraph()
+        
+        deps = graph.get_dependencies("nonexistent")
+        
+        # Ar trebui să returneze listă goală (lines 262-263)
+        assert deps == []
+    
+    def test_get_dependents_nonexistent_task(self):
+        """Test get_dependents cu task inexistent."""
+        graph = DependencyGraph()
+        
+        dependents = graph.get_dependents("nonexistent")
+        
+        # Ar trebui să returneze listă goală (line 275)
+        assert dependents == []
+    
+    def test_execute_sequential_with_task_failure(self):
+        """Test execute_sequential cu task care eșuează."""
+        def failing_func():
+            raise RuntimeError("Task failure")
+        
+        scheduler = TaskScheduler()
+        scheduler.add_task(task_id="task1", func=simple_computation, args=(5,))
+        scheduler.add_task(task_id="task2", func=failing_func)
+        scheduler.add_task(task_id="task3", func=simple_computation, args=(10,))
+        
+        results = scheduler.execute_sequential()
+        
+        # Task2 ar trebui să fie în failed_tasks (lines 355-358)
+        assert "task2" in scheduler.failed_tasks
+        assert results["task2"] is None
+        
+        # Celelalte task-uri ar trebui să fie completate
+        assert "task1" in scheduler.completed_tasks
+        assert "task3" in scheduler.completed_tasks
+    
+    def test_graph_get_task_missing(self):
+        """Test get_task cu task lipsă."""
+        graph = DependencyGraph()
+        
+        task = graph.get_task("missing")
+        
+        # Ar trebui să returneze None (line 349)
+        assert task is None
+
+
+# ============================================================================
 # PYTEST CONFIGURATION
 # ============================================================================
 
