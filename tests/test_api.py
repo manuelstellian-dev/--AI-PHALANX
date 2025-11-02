@@ -618,5 +618,3 @@ class TestCommandRoutesEdgeCases:
         
         assert exc_info.value.status_code == 500
         
-        # Restabilește starea originală
-        server.command_processor = original_processor
