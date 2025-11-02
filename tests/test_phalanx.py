@@ -370,3 +370,63 @@ class TestThermopylaeModule:
         
         assert thermopylae.critical_threshold == 0.90
         assert not thermopylae.is_armed
+
+
+class TestHelotEdgeCases:
+    """Test edge cases pentru Helot."""
+    
+    @pytest.mark.asyncio
+    async def test_helot_critical_cpu(self):
+        """Test Helot cu CPU critic."""
+        config = {
+            'resource_thresholds': {
+                'cpu_critical': 0.1,  # Foarte jos pentru a fi sigur că e depășit
+                'memory_critical': 0.1,
+                'disk_critical': 0.1
+            }
+        }
+        helot = HelotModule(config)
+        
+        resources = await helot.monitor_resources()
+        
+        # Verifică că probabilitatea e redusă din cauza resurselor critice
+        assert helot.survival_probability < 1.0
+    
+    @pytest.mark.asyncio
+    async def test_helot_with_gpu_load(self):
+        """Test Helot cu GPU load simulat."""
+        config = {
+            'simulated_gpu_load': 0.8
+        }
+        helot = HelotModule(config)
+        
+        resources = await helot.monitor_resources()
+        
+        # Factorul de paralelism ar trebui să fie mai mare cu GPU
+        assert resources['parallelism_factor'] > 1.0
+
+
+class TestThermopylaeEdgeCases:
+    """Test edge cases pentru Thermopylae."""
+    
+    @pytest.mark.asyncio
+    async def test_thermopylae_emergency_armed(self):
+        """Test protocol emergency când e armat și sub prag."""
+        import tempfile
+        import os
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = {
+                'survival_threshold': 0.95,
+                'thermopylae_armed': True,
+                'base_path': tmpdir,
+                'keys_path': 'keys.yaml',
+                'vault_path': 'vault'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Check emergency cu probabilitate critică
+            await thermopylae.check_emergency_protocol(0.5)
+            
+            # Protocolul ar trebui să fie activat
+            assert thermopylae.protocol_activated

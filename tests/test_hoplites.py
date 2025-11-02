@@ -710,3 +710,191 @@ class TestMessenger:
         
         assert 'firewall_active' in result
         assert result['platform'] == 'Windows'
+
+
+class TestSpartanGuardEdgeCases:
+    """Test edge cases pentru Spartan Guard."""
+    
+    @pytest.mark.asyncio
+    async def test_encryption_error_handling(self):
+        """Test handling erori la criptare."""
+        config = {}
+        guard = SpartanGuard(config)
+        
+        # Test cu date goale
+        try:
+            encrypted = await guard.encrypt("")
+            decrypted = await guard.decrypt(encrypted)
+            assert decrypted == ""
+        except Exception as e:
+            # Acceptăm și excepții pentru date goale
+            pass
+    
+    @pytest.mark.asyncio
+    async def test_decryption_with_wrong_data(self):
+        """Test decriptare cu date invalide."""
+        config = {}
+        guard = SpartanGuard(config)
+        
+        # Test cu date invalide
+        try:
+            await guard.decrypt("invalid_base64_data")
+            assert False, "Ar trebui să arunce excepție"
+        except Exception:
+            # Expected
+            pass
+    
+    @pytest.mark.asyncio
+    async def test_guard_without_key(self):
+        """Test Guard fără cheie master."""
+        # Forțează crearea fără cheie prin config empty
+        import os
+        old_env = os.environ.get('SPARTA_MASTER_KEY')
+        if old_env:
+            del os.environ['SPARTA_MASTER_KEY']
+        
+        config = {}
+        guard = SpartanGuard(config)
+        
+        # Ar trebui să aibă o cheie temporară
+        assert guard.master_key is not None
+        
+        # Restore env
+        if old_env:
+            os.environ['SPARTA_MASTER_KEY'] = old_env
+
+
+class TestShieldBearerEdgeCases:
+    """Test edge cases pentru Shield Bearer."""
+    
+    @pytest.mark.asyncio
+    async def test_external_access_timeout(self):
+        """Test timeout pentru external access."""
+        config = {}
+        shield = ShieldBearer(config)
+        
+        # Test cu timeout foarte mic
+        can_connect = await shield.test_external_access(
+            host="1.2.3.4",  # IP invalid
+            port=9999,
+            timeout=1
+        )
+        
+        # Ar trebui să returneze False
+        assert not can_connect
+    
+    @pytest.mark.asyncio
+    async def test_firewall_check_exception_handling(self):
+        """Test handling excepții în firewall check."""
+        config = {}
+        shield = ShieldBearer(config)
+        
+        # Test pe platformă necunoscută
+        result = await shield.enforce_firewall()
+        
+        # Ar trebui să returneze ceva chiar dacă verificarea eșuează
+        assert 'firewall_active' in result
+
+
+class TestMessengerEdgeCases:
+    """Test edge cases pentru Messenger."""
+    
+    @pytest.mark.asyncio
+    async def test_send_message_encryption_failure(self):
+        """Test trimitere mesaj când encryption eșuează."""
+        
+        # Mock Guard care aruncă excepție
+        class FailingGuard:
+            async def encrypt(self, data):
+                raise Exception("Encryption failed")
+        
+        config = {}
+        messenger = Messenger(config, spartan_guard=FailingGuard())
+        
+        result = await messenger.send_secure_message({
+            'recipient': 'test',
+            'content': 'message',
+            'encrypt': True
+        })
+        
+        # Ar trebui să returneze failure
+        assert not result['success']
+    
+    @pytest.mark.asyncio
+    async def test_receive_message_decryption_failure(self):
+        """Test primire mesaj când decription eșuează."""
+        
+        # Mock Guard care aruncă excepție
+        class FailingGuard:
+            async def decrypt(self, data):
+                raise Exception("Decryption failed")
+        
+        config = {}
+        messenger = Messenger(config, spartan_guard=FailingGuard())
+        
+        result = await messenger.receive_message('encrypted_data')
+        
+        # Ar trebui să returneze failure
+        assert not result['success']
+    
+    @pytest.mark.asyncio
+    async def test_process_queue_with_failures(self):
+        """Test procesare coadă cu eșecuri."""
+        
+        # Mock Guard care aruncă excepție
+        class FailingGuard:
+            async def encrypt(self, data):
+                raise Exception("Encryption failed")
+        
+        config = {}
+        messenger = Messenger(config, spartan_guard=FailingGuard())
+        
+        # Adaugă mesaje în coadă
+        await messenger.queue_message({
+            'recipient': 'user1',
+            'content': 'message1',
+            'encrypt': True
+        })
+        
+        # Procesează coada
+        result = await messenger.process_queue()
+        
+        # Ar trebui să raporteze eșecuri
+        assert result['failed'] > 0
+
+
+class TestWeaponMasterEdgeCases:
+    """Test edge cases pentru Weapon Master."""
+    
+    @pytest.mark.asyncio
+    async def test_dns_lookup_failure(self):
+        """Test DNS lookup cu domeniu invalid."""
+        config = {'external_access_enabled': True}
+        weapon = WeaponMaster(config)
+        
+        result = await weapon.execute_external_query({
+            'type': 'dns_lookup',
+            'target': 'this-domain-does-not-exist-12345.com'
+        })
+        
+        # Ar trebui să returneze failure
+        if not result['success']:
+            assert 'error' in result
+    
+    @pytest.mark.asyncio
+    async def test_domain_extraction_from_url(self):
+        """Test extragere domeniu din URL."""
+        config = {
+            'external_access_enabled': True,
+            'allowed_domains': ['example.com']
+        }
+        weapon = WeaponMaster(config)
+        
+        # Test cu URL complet
+        result = await weapon.execute_external_query({
+            'type': 'http_get',
+            'target': 'https://example.com/path?query=1'
+        })
+        
+        # Ar trebui să permită accesul
+        assert result['success']

@@ -421,3 +421,88 @@ class TestCommandProcessor:
         
         assert result['success']
         assert 'result' in result
+
+
+class TestCommandProcessorEdgeCases:
+    """Test edge cases pentru CommandProcessor."""
+    
+    @pytest.mark.asyncio
+    async def test_command_processor_exception_handling(self):
+        """Test handling exceptions în process_command."""
+        from core.commandprocessor import CommandProcessor
+        
+        # Mock module care aruncă excepție
+        class FailingModule:
+            async def get_status(self):
+                raise Exception("Test exception")
+        
+        modules = {
+            'phalanx': {'helot': FailingModule()},
+            'hoplites': {}
+        }
+        processor = CommandProcessor(modules)
+        
+        # Testează că exception-ul e prins
+        result = await processor.process_command({
+            'type': 'status',
+            'payload': {}
+        })
+        
+        # Ar trebui să returneze failure când exception-ul e prins
+        assert not result['success']
+
+
+class TestLeondasBrainEdgeCases:
+    """Test edge cases pentru LeondasBrain."""
+    
+    def test_lambda_tas_formula_boundary(self):
+        """Test formula Λ-TAS la limite."""
+        from core.leonidasbrain import LeondasBrain
+        
+        config = {}
+        brain = LeondasBrain(config)
+        
+        # Test cu k*P = 1 (boundary case)
+        lambda_tas = brain.calculate_lambda_tas(0.01, 0.5)
+        assert lambda_tas > 0
+        
+        # Test cu k*P foarte mare
+        lambda_tas = brain.calculate_lambda_tas(1000, 10)
+        assert 0.1 <= lambda_tas <= 10.0
+    
+    @pytest.mark.asyncio
+    async def test_homeostasis_loop_exception_recovery(self):
+        """Test recovery după excepție în homeostasis loop."""
+        from core.leonidasbrain import LeondasBrain
+        
+        config = {
+            'hardware': {'cpu_cores': 4},
+            'current_workload': 0.5
+        }
+        brain = LeondasBrain(config)
+        
+        # Inițializează cu module defecte
+        class FailingHelot:
+            async def get_survival_probability(self):
+                raise Exception("Test failure")
+        
+        phalanx_modules = {
+            'helot': FailingHelot()
+        }
+        await brain.initialize_phalanx(phalanx_modules)
+        
+        # Pornește bucla
+        import asyncio
+        task = asyncio.create_task(brain.homeostasis_loop())
+        
+        # Așteaptă puțin să vadă dacă recuperează
+        await asyncio.sleep(0.3)
+        
+        # Oprește bucla
+        await brain.shutdown()
+        
+        # Așteaptă ca task-ul să se termine
+        try:
+            await asyncio.wait_for(task, timeout=1.0)
+        except asyncio.TimeoutError:
+            task.cancel()

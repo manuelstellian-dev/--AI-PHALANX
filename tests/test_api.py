@@ -546,3 +546,79 @@ class TestMetricsRoutes:
         
         # Restabilește starea originală
         server.leonidas_brain = original_brain
+
+
+class TestAPIServerEdgeCases:
+    """Test edge cases pentru API Server."""
+    
+    @pytest.mark.asyncio
+    async def test_initialize_system_with_minimal_config(self):
+        """Test inițializare sistem cu configurație minimală."""
+        from api.server import initialize_system
+        
+        config = {}
+        brain, processor = await initialize_system(config)
+        
+        assert brain is not None
+        assert processor is not None
+        
+        # Cleanup
+        await brain.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_initialize_system_all_modules_present(self):
+        """Test că toate modulele sunt inițializate."""
+        from api.server import initialize_system
+        
+        config = {'hardware': {'cpu_cores': 8, 'npu_tops': 50}}
+        brain, processor = await initialize_system(config)
+        
+        # Verifică module Phalanx
+        assert 'phalanx' in brain.modules
+        assert 'helot' in brain.modules['phalanx']
+        assert 'agoge' in brain.modules['phalanx']
+        assert 'krypteia' in brain.modules['phalanx']
+        assert 'thermopylae' in brain.modules['phalanx']
+        
+        # Verifică module Hoplites
+        assert 'hoplites' in brain.modules
+        assert 'guard' in brain.modules['hoplites']
+        assert 'shield' in brain.modules['hoplites']
+        assert 'oracle' in brain.modules['hoplites']
+        assert 'weapon' in brain.modules['hoplites']
+        assert 'messenger' in brain.modules['hoplites']
+        
+        # Cleanup
+        await brain.shutdown()
+
+
+class TestCommandRoutesEdgeCases:
+    """Test edge cases pentru Command Routes."""
+    
+    @pytest.mark.asyncio
+    async def test_execute_command_exception_in_processor(self):
+        """Test execute command când processor aruncă excepție."""
+        from api.routes.command import execute_command, TacticalCommand
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Mock processor care aruncă excepție
+        class FailingProcessor:
+            async def process_command(self, command):
+                raise Exception("Test exception")
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează processor-ul defect
+        server.command_processor = FailingProcessor()
+        
+        command = TacticalCommand(type="status", payload={})
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await execute_command(command, "test_token")
+        
+        assert exc_info.value.status_code == 500
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
