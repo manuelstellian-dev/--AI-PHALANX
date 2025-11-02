@@ -6,13 +6,43 @@ system:
   motto: "ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)"
   version: "0.1.0"
   license: "MIT"
+  
+  # Legile Spartane
+  laws:
+    # Legea I: Loialitatea Absolută
+    commander_supremacy: true
+    auto_modification_forbidden: true
+    air_gap_mandatory: true
+    
+    # Legea II: Disciplina Operațională
+    priority_order:
+      - "Neutralizarea Amenințărilor (Thermopylae/Krypteia)"
+      - "Integritatea Datelor (Spartan Guard)"
+      - "Homeostazia Sistemului (Helot)"
+      - "Adaptarea Continuă (Agoge)"
 
 # Configurare Hardware
 hardware:
   cpu_cores: 4
-  npu_tops: 50  # TOPS alocare pentru Battle Oracle
+  npu_tops: 50  # TOPS total alocare
   memory_gb: 16
   disk_gb: 100
+  vram_gb: 6    # VRAM total disponibil
+  
+  # Alocare Hardware Detaliată (NPU - 50 TOPS total)
+  npu_allocation:
+    battle_oracle: 10        # Analiză de risc și predicții tactice
+    threat_analysis: 10      # Krypteia - monitorizare amenințări
+    decision_engine: 15      # Λ-Core - motorul decizional
+    agoge_training: 10       # Micro-antrenament
+    reserve: 5               # Rezervă pentru operațiuni critice
+  
+  # Alocare VRAM (6 GB total)
+  vram_allocation:
+    model_inference: 2.5     # Inferență modele AI
+    data_cache: 2.0          # Cache date temporare
+    crypto_operations: 1.0   # Operații criptografice
+    reserve: 0.5             # Rezervă
 
 # Configurare Autentificare
 auth:
@@ -57,6 +87,7 @@ hoplites:
   spartan_guard:
     encryption_algorithm: "AES-256-GCM"
     key_derivation: "PBKDF2"
+    quantum_resistant: true  # Pregătit pentru integrare PQC (Kyber, Dilithium)
     # Cheia master este încărcată din spartan_keys.yaml sau environment
 
   # Shield Bearer - Air-Gap
@@ -64,12 +95,14 @@ hoplites:
     airgap_mode: "strict"  # strict, permissive, disabled
     allowed_connections: []  # Lista de conexiuni permise în modul permissive
     firewall_check_enabled: true
+    p2p_mesh_port: 7301  # Port pentru comunicații P2P mesh între Falange (opțional)
 
   # Battle Oracle - Predicții
   battle_oracle:
-    npu_tops: 50
+    npu_tops: 10  # Alocare specifică din totalul de 50 TOPS
     prediction_confidence_threshold: 0.7
     simulation_default_iterations: 100
+    threat_intelligence_enabled: true
 
   # Weapon Master - Acces Extern
   weapon_master:
@@ -107,3 +140,30 @@ security:
   validate_inputs: true
   audit_log_enabled: true
   sensitive_data_masking: true
+
+# Capacități Avansate (Pentru Extindere Viitoare)
+advanced_capabilities:
+  # Criptografie Cuantică (PQC)
+  post_quantum_cryptography:
+    enabled: false  # Setează true când Kyber/Dilithium sunt integrate
+    algorithms: ["Kyber", "Dilithium"]
+    migration_path: "encapsulation"  # încapsulare sau înlocuire
+  
+  # Învățare Federată
+  federated_learning:
+    enabled: false  # Setează true pentru coordonare între Falange
+    mesh_port: 7301
+    gradient_sharing_only: true  # Doar greutăți, nu date brute
+  
+  # eBPF pentru Krypteia
+  ebpf_monitoring:
+    enabled: false  # Setează true pentru monitorizare la nivel de kernel
+    syscall_tracing: true
+    network_visibility: true
+  
+  # Registru Distribuit Imutabil (DLT/Blockchain)
+  immutable_ledger:
+    enabled: false  # Setează true pentru audit imutabil
+    log_thermopylae_events: true
+    log_critical_decisions: true
+    blockchain_type: "permissioned"  # permissioned sau private

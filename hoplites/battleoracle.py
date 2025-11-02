@@ -23,9 +23,10 @@ class BattleOracle:
             config: Configurația modulului
         """
         self.config = config
-        self.npu_tops = config.get('npu_tops', 50)
+        # NPU allocation: 10 TOPS din totalul de 50 TOPS pentru analiză tactică
+        self.npu_tops = config.get('npu_tops', 10)
         self.prediction_history = []
-        logger.info(f"🔮 Battle Oracle initialized - NPU allocation: {self.npu_tops} TOPS")
+        logger.info(f"🔮 Battle Oracle initialized - NPU allocation: {self.npu_tops} TOPS (from 50 TOPS total)")
 
     async def analyze_risk(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
         """

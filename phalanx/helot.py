@@ -38,19 +38,51 @@ class HelotModule:
         Returns:
             Dicționar cu statistici despre resurse
         """
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        cpu_count = psutil.cpu_count()
+        
         resources = {
-            'cpu_percent': psutil.cpu_percent(interval=0.1),
-            'cpu_count': psutil.cpu_count(),
+            'cpu_percent': cpu_percent,
+            'cpu_count': cpu_count,
             'memory_percent': psutil.virtual_memory().percent,
             'memory_available_gb': psutil.virtual_memory().available / (1024**3),
             'disk_percent': psutil.disk_usage('/').percent,
             'disk_free_gb': psutil.disk_usage('/').free / (1024**3)
         }
         
+        # Calculează factorul de paralelism (P)
+        resources['parallelism_factor'] = self._calculate_parallelism_factor(resources)
+        
         # Calculează probabilitatea de supraviețuire
         self.survival_probability = self._calculate_survival_probability(resources)
         
         return resources
+    
+    def _calculate_parallelism_factor(self, resources: Dict[str, Any]) -> float:
+        """
+        Calculează Factorul de Paralelism (P) conform formulei spartane.
+        
+        Formula: P = 1.0 + (CPU_Cores * (1 - CPU_Load/100)) + (GPU_Load * 5)
+        
+        Args:
+            resources: Statistici despre resurse
+            
+        Returns:
+            Factorul de paralelism (P)
+        """
+        cpu_cores = resources.get('cpu_count', 1)
+        cpu_load = resources.get('cpu_percent', 0)
+        
+        # Simulare GPU load (în configurație reală, ar veni din GPUtil)
+        gpu_load = self.config.get('simulated_gpu_load', 0.0)
+        
+        # Formula: P = 1.0 + (Numărul de Core-uri Logice * (1 - Încărcare CPU/100)) + (Încărcare GPU * 5)
+        P = 1.0 + (cpu_cores * (1 - cpu_load / 100.0)) + (gpu_load * 5)
+        
+        # P trebuie să fie mai mare decât 1
+        P = max(1.0, P)
+        
+        return P
 
     def _calculate_survival_probability(self, resources: Dict[str, Any]) -> float:
         """

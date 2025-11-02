@@ -25,7 +25,27 @@ class CommandProcessor:
         """
         self.modules = modules
         self.adaptation_factor = 1.0
+        self.active_tasks = 0
+        self.data_vault_size_mb = 0.0
         logger.info("⚙️ Λ-Möbius Command Processor initialized")
+    
+    def calculate_universe_expansion_factor(self) -> float:
+        """
+        Calculează Factorul de Expansiune a Universului (U).
+        Reflectă volumul de date și sarcinile active.
+        
+        Formula: U = (1 + Sarcini active + ln(max(1.0, Volum Vault MB))) * Factor Adaptare Agoge
+        
+        Returns:
+            Factorul de expansiune (U)
+        """
+        import math
+        
+        # Formula: U = (1 + Sarcini active + ln(max(1.0, Volum Vault MB))) * Factor Adaptare Agoge
+        base_expansion = 1 + self.active_tasks + math.log(max(1.0, self.data_vault_size_mb))
+        U = base_expansion * self.adaptation_factor
+        
+        return U
 
     async def process_command(self, command: Dict[str, Any]) -> Dict[str, Any]:
         """

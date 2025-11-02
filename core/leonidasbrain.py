@@ -33,23 +33,53 @@ class LeondasBrain:
         logger.info("🛡️ ΛΕΩΝΙΔΑΣ Brain initialized")
         logger.info(f"🏛️ Motto: ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)")
 
-    def calculate_lambda_tas(self, parallelism: int, workload: float) -> float:
+    def calculate_lambda_tas(self, parallelism: float, workload: float) -> float:
         """
         Calculează Timpul Autonom Spartan (Λ-TAS).
         Reglează ritmul de lucru pe baza paralelismului hardware (P) și volumului de date (U).
         
-        Formula: Λ-TAS = P / (1 + U)
+        Formula avansată (pentru k·P > 1):
+        T_new = (T_1 * ln(U + 1)) / (1 - 1 / (k * P))
+        
+        Unde:
+        - T_1 = 1.0 secunde (valoare de bază)
+        - k = 100 (constantă)
+        - P = Factorul de Paralelism (calculat de Helot)
+        - U = Mărimea Universului / Factor de Expansiune (calculat de CommandProcessor)
         
         Args:
-            parallelism: Numărul de nucleuri disponibile
-            workload: Volumul de sarcini (0.0 - 1.0)
+            parallelism: Factorul de paralelism (P) - capacitatea de procesare paralelă
+            workload: Factorul de expansiune (U) - volumul de sarcini și date
             
         Returns:
-            Factorul Λ-TAS
+            Factorul Λ-TAS în secunde
         """
+        import math
+        
         if workload < 0:
             workload = 0
-        lambda_tas = parallelism / (1 + workload)
+        if parallelism <= 0:
+            parallelism = 1.0
+        
+        # Constante
+        T_1 = 1.0  # Valoare de bază (secunde)
+        k = 100    # Constantă de scalare
+        
+        # Formula avansată Λ-TAS
+        # T_new = (T_1 * ln(U + 1)) / (1 - 1 / (k * P))
+        k_times_P = k * parallelism
+        
+        if k_times_P <= 1:
+            # Fallback la formula simplă dacă k·P ≤ 1
+            lambda_tas = parallelism / (1 + workload)
+        else:
+            numerator = T_1 * math.log(workload + 1)
+            denominator = 1 - (1 / k_times_P)
+            lambda_tas = numerator / denominator if denominator > 0 else 1.0
+            
+            # Limitează valoarea pentru a evita extreme
+            lambda_tas = max(0.1, min(10.0, lambda_tas))
+        
         return lambda_tas
 
     async def initialize_phalanx(self, phalanx_modules: Dict[str, Any]):
