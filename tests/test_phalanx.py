@@ -89,6 +89,60 @@ class TestKrypteiaModule:
         assert 'threats_detected' in assessment
 
 
+class TestKrypteiaFullCoverage:
+    """Tests to achieve 100% coverage for Krypteia."""
+    
+    @pytest.mark.asyncio
+    async def test_monitoring_loop_exception(self, monkeypatch):
+        """Test monitoring loop with exception handling."""
+        config = {}
+        krypteia = KrypteiaModule(config)
+        
+        # Mock _check_network_threats to raise exception once
+        call_count = [0]
+        
+        def mock_check_network_threats():
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise RuntimeError("Test exception")
+        
+        krypteia._check_network_threats = mock_check_network_threats
+        
+        # Start monitoring
+        await krypteia.start_monitoring()
+        
+        # Wait a bit for exception to occur
+        import time
+        time.sleep(0.2)
+        
+        # Stop monitoring
+        await krypteia.stop_monitoring()
+        
+        # Exception should have been caught (lines 64-66)
+        assert call_count[0] >= 1
+    
+    @pytest.mark.asyncio
+    async def test_update_threat_level_thresholds(self):
+        """Test threat level update with different thresholds."""
+        config = {}
+        krypteia = KrypteiaModule(config)
+        
+        # Test medium threat level (2 threats)
+        krypteia.threats_detected = [{"type": "threat1"}, {"type": "threat2"}]
+        krypteia._update_threat_level()
+        assert krypteia.threat_level == "medium"  # lines 98
+        
+        # Test high threat level (4 threats)
+        krypteia.threats_detected = [{"type": f"threat{i}"} for i in range(4)]
+        krypteia._update_threat_level()
+        assert krypteia.threat_level == "high"  # line 100
+        
+        # Test critical threat level (5+ threats)
+        krypteia.threats_detected = [{"type": f"threat{i}"} for i in range(5)]
+        krypteia._update_threat_level()
+        assert krypteia.threat_level == "critical"
+
+
 class TestThermopylaeModule:
     """Test suite pentru Thermopylae."""
     
@@ -432,6 +486,157 @@ class TestThermopylaeEdgeCases:
             assert thermopylae.protocol_activated
 
 
+class TestThermopylaeFullCoverage:
+    """Tests to achieve 100% coverage for Thermopylae."""
+    
+    @pytest.mark.asyncio
+    async def test_destroy_keys_file_exists(self):
+        """Test destroying keys when file exists."""
+        import tempfile
+        import os
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a test keys file
+            keys_file = os.path.join(tmpdir, 'test_keys.yaml')
+            with open(keys_file, 'w') as f:
+                f.write("test keys data")
+            
+            config = {
+                'base_path': tmpdir,
+                'keys_path': 'test_keys.yaml'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Destroy keys
+            await thermopylae._destroy_cryptographic_keys()
+            
+            # File should be deleted (lines 83-86)
+            assert not os.path.exists(keys_file)
+    
+    @pytest.mark.asyncio
+    async def test_destroy_keys_file_not_found(self):
+        """Test destroying keys when file doesn't exist."""
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = {
+                'base_path': tmpdir,
+                'keys_path': 'nonexistent_keys.yaml'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Try to destroy nonexistent keys (lines 88-89)
+            await thermopylae._destroy_cryptographic_keys()
+            
+            # Should handle gracefully
+            assert True
+    
+    @pytest.mark.asyncio
+    async def test_destroy_keys_exception(self, monkeypatch):
+        """Test destroying keys with exception."""
+        import tempfile
+        import os
+        
+        def mock_remove(*args, **kwargs):
+            raise PermissionError("Cannot delete file")
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a test keys file
+            keys_file = os.path.join(tmpdir, 'test_keys.yaml')
+            with open(keys_file, 'w') as f:
+                f.write("test keys data")
+            
+            config = {
+                'base_path': tmpdir,
+                'keys_path': 'test_keys.yaml'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Mock os.remove to raise exception
+            monkeypatch.setattr(os, 'remove', mock_remove)
+            
+            # Try to destroy keys with exception (lines 89-90)
+            await thermopylae._destroy_cryptographic_keys()
+            
+            # Should handle exception gracefully
+            assert True
+    
+    @pytest.mark.asyncio
+    async def test_destroy_vault_directory_exists(self):
+        """Test destroying vault when directory exists."""
+        import tempfile
+        import os
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a test vault directory
+            vault_dir = os.path.join(tmpdir, 'test_vault')
+            os.makedirs(vault_dir)
+            
+            # Create some files in vault
+            with open(os.path.join(vault_dir, 'file1.txt'), 'w') as f:
+                f.write("data")
+            
+            config = {
+                'base_path': tmpdir,
+                'vault_path': 'test_vault'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Destroy vault
+            await thermopylae._destroy_encrypted_vault()
+            
+            # Directory should be deleted (lines 105-106)
+            assert not os.path.exists(vault_dir)
+    
+    @pytest.mark.asyncio
+    async def test_destroy_vault_directory_not_found(self):
+        """Test destroying vault when directory doesn't exist."""
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = {
+                'base_path': tmpdir,
+                'vault_path': 'nonexistent_vault'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Try to destroy nonexistent vault (lines 108-109)
+            await thermopylae._destroy_encrypted_vault()
+            
+            # Should handle gracefully
+            assert True
+    
+    @pytest.mark.asyncio
+    async def test_destroy_vault_exception(self, monkeypatch):
+        """Test destroying vault with exception."""
+        import tempfile
+        import os
+        import shutil
+        
+        def mock_rmtree(*args, **kwargs):
+            raise PermissionError("Cannot delete directory")
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a test vault directory
+            vault_dir = os.path.join(tmpdir, 'test_vault')
+            os.makedirs(vault_dir)
+            
+            config = {
+                'base_path': tmpdir,
+                'vault_path': 'test_vault'
+            }
+            thermopylae = ThermopylaeModule(config)
+            
+            # Mock shutil.rmtree to raise exception
+            monkeypatch.setattr(shutil, 'rmtree', mock_rmtree)
+            
+            # Try to destroy vault with exception (lines 109-110)
+            await thermopylae._destroy_encrypted_vault()
+            
+            # Should handle exception gracefully
+            assert True
+
+
 class TestHelotAdditionalEdgeCases:
     """Additional edge case tests pentru Helot to increase coverage."""
     
@@ -441,7 +646,7 @@ class TestHelotAdditionalEdgeCases:
         config = {}
         helot = HelotModule(config)
         
-        # Test optimize_resources method - line 101
+        # Test optimize_resources method
         await helot.optimize_resources()
         
         # Should complete without error

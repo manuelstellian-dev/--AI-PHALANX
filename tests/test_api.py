@@ -621,6 +621,108 @@ class TestMetricsRoutes:
         server.leonidas_brain = original_brain
 
 
+class TestCommandRoutesFullCoverage:
+    """Tests to achieve 100% coverage for command routes."""
+    
+    @pytest.mark.asyncio
+    async def test_get_system_status_no_processor(self):
+        """Test get_system_status când processor nu e inițializat."""
+        from api.routes.command import get_system_status
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await get_system_status("test_token")
+        
+        # line 64
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_analyze_risk_no_processor(self):
+        """Test analyze_risk când processor nu e inițializat."""
+        from api.routes.command import analyze_risk, RiskAnalysisRequest
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        request = RiskAnalysisRequest(
+            scenario_name="Test",
+            risk_factors=["factor1"],
+            severity=0.5,
+            complexity=0.5,
+            available_resources=0.5
+        )
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await analyze_risk(request, "test_token")
+        
+        # line 96
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_encrypt_data_no_processor(self):
+        """Test encrypt_data când processor nu e inițializat."""
+        from api.routes.command import encrypt_data, EncryptionRequest
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        request = EncryptionRequest(data="test data")
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await encrypt_data(request, "test_token")
+        
+        # line 133
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_check_airgap_no_processor(self):
+        """Test check_airgap când processor nu e inițializat."""
+        from api.routes.command import check_airgap
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await check_airgap("test_token")
+        
+        # line 153
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+
+
 class TestAPIServerEdgeCases:
     """Test edge cases pentru API Server."""
     

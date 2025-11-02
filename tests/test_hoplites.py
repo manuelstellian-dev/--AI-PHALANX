@@ -1203,6 +1203,102 @@ class TestShieldBearerPlatformSpecific:
 # TASK 4: PSUTIL EXCEPTION TESTS
 # ============================================================================
 
+class TestShieldBearerAdditionalCoverage:
+    """Additional tests to reach 100% coverage for ShieldBearer."""
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_import_error(self, monkeypatch):
+        """Test network connections check when psutil ImportError occurs."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise ImportError
+        def mock_net_connections(*args, **kwargs):
+            raise ImportError("psutil not available")
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        # This should trigger the ImportError path (line 81-82)
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_airgap_strict_no_connections(self, monkeypatch):
+        """Test strict Air-Gap mode with no connections."""
+        import psutil
+        
+        # Mock no connections
+        def mock_net_connections(*args, **kwargs):
+            return []
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {'airgap_mode': 'strict'}
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should pass with no connections (lines 49-50)
+        assert result is True
+    
+    @pytest.mark.asyncio
+    async def test_airgap_permissive_authorized_connections(self, monkeypatch):
+        """Test permissive Air-Gap mode with authorized connections."""
+        import psutil
+        
+        # Mock authorized connection
+        class MockConnection:
+            def __init__(self):
+                self.status = 'ESTABLISHED'
+                self.laddr = type('obj', (object,), {'ip': '127.0.0.1', 'port': 8080})
+                self.raddr = type('obj', (object,), {'ip': '10.0.0.1', 'port': 443})
+        
+        conn_dict = {
+            'local': '127.0.0.1:8080',
+            'remote': '10.0.0.1:443'
+        }
+        
+        def mock_net_connections(*args, **kwargs):
+            return [MockConnection()]
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {
+            'airgap_mode': 'permissive',
+            'allowed_connections': [conn_dict]  # This connection is allowed
+        }
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should pass with authorized connection (line 59)
+        assert result is True
+    
+    @pytest.mark.asyncio
+    async def test_enforce_firewall_generic_exception(self, monkeypatch):
+        """Test firewall check with generic exception."""
+        import platform
+        
+        # Mock platform.system to raise exception
+        def mock_system():
+            raise RuntimeError("Platform detection failed")
+        
+        monkeypatch.setattr(platform, 'system', mock_system)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield.enforce_firewall()
+        
+        # Should handle exception gracefully (lines 116-117)
+        assert 'firewall_active' in result
+        assert result['firewall_active'] is False
+
+
 class TestShieldBearerPsutilExceptions:
     """Test psutil exception handling in ShieldBearer."""
     
