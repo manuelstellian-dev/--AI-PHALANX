@@ -1101,3 +1101,423 @@ class TestComprehensiveIntegration:
         result = await messenger.send_secure_message(message)
         # Lines 60-61 for encryption with associated data
         assert result is not None
+
+
+# ============================================================================
+# TASK 3: PLATFORM-SPECIFIC TESTS
+# ============================================================================
+
+class TestShieldBearerPlatformSpecific:
+    """Test platform-specific firewall checks with mocking."""
+    
+    @pytest.mark.asyncio
+    async def test_enforce_firewall_linux(self, monkeypatch):
+        """Test firewall check on Linux platform."""
+        import platform
+        
+        # Mock platform.system to return Linux
+        monkeypatch.setattr(platform, 'system', lambda: 'Linux')
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield.enforce_firewall()
+        
+        assert 'firewall_active' in result
+        assert result['platform'] == 'Linux'
+    
+    @pytest.mark.asyncio
+    async def test_enforce_firewall_windows(self, monkeypatch):
+        """Test firewall check on Windows platform."""
+        import platform
+        
+        # Mock platform.system to return Windows
+        monkeypatch.setattr(platform, 'system', lambda: 'Windows')
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield.enforce_firewall()
+        
+        assert 'firewall_active' in result
+        assert result['platform'] == 'Windows'
+    
+    @pytest.mark.asyncio
+    async def test_enforce_firewall_macos(self, monkeypatch):
+        """Test firewall check on macOS platform."""
+        import platform
+        
+        # Mock platform.system to return Darwin (macOS)
+        monkeypatch.setattr(platform, 'system', lambda: 'Darwin')
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield.enforce_firewall()
+        
+        assert 'firewall_active' in result
+        assert result['platform'] == 'Darwin'
+    
+    @pytest.mark.asyncio
+    async def test_check_iptables_exception_handling(self, monkeypatch):
+        """Test iptables check with subprocess exception."""
+        import subprocess
+        
+        # Mock subprocess.run to raise exception
+        def mock_run(*args, **kwargs):
+            raise FileNotFoundError("iptables not found")
+        
+        monkeypatch.setattr(subprocess, 'run', mock_run)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield._check_iptables()
+        
+        # Should return failure gracefully
+        assert result['firewall_active'] is False
+        assert result['platform'] == 'Linux'
+    
+    @pytest.mark.asyncio
+    async def test_check_windows_firewall_exception_handling(self, monkeypatch):
+        """Test Windows firewall check with subprocess exception."""
+        import subprocess
+        
+        # Mock subprocess.run to raise exception
+        def mock_run(*args, **kwargs):
+            raise FileNotFoundError("netsh not found")
+        
+        monkeypatch.setattr(subprocess, 'run', mock_run)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield._check_windows_firewall()
+        
+        # Should return failure gracefully
+        assert result['firewall_active'] is False
+        assert result['platform'] == 'Windows'
+
+
+# ============================================================================
+# TASK 4: PSUTIL EXCEPTION TESTS
+# ============================================================================
+
+class TestShieldBearerAdditionalCoverage:
+    """Additional tests to reach 100% coverage for ShieldBearer."""
+    
+    @pytest.mark.asyncio
+    async def test_airgap_unknown_mode(self, monkeypatch):
+        """Test Air-Gap with unknown/invalid mode."""
+        import psutil
+        
+        # Mock no connections
+        def mock_net_connections(*args, **kwargs):
+            return []
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {'airgap_mode': 'unknown_mode'}
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should return True as fallback (line 61)
+        assert result is True
+    
+    @pytest.mark.asyncio
+    async def test_windows_firewall_on(self, monkeypatch):
+        """Test Windows firewall check with firewall ON."""
+        import subprocess
+        
+        # Mock successful Windows firewall check with ON status
+        class MockResult:
+            returncode = 0
+            stdout = "Domain Profile Settings:\nState: ON\n"
+        
+        def mock_run(*args, **kwargs):
+            return MockResult()
+        
+        monkeypatch.setattr(subprocess, 'run', mock_run)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield._check_windows_firewall()
+        
+        # Should detect firewall is ON (line 151-152)
+        assert result['firewall_active'] is True
+        assert result['rules_configured'] is True
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_import_error(self, monkeypatch):
+        """Test network connections check when psutil ImportError occurs."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise ImportError
+        def mock_net_connections(*args, **kwargs):
+            raise ImportError("psutil not available")
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        # This should trigger the ImportError path (line 81-82)
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_airgap_strict_no_connections(self, monkeypatch):
+        """Test strict Air-Gap mode with no connections."""
+        import psutil
+        
+        # Mock no connections
+        def mock_net_connections(*args, **kwargs):
+            return []
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {'airgap_mode': 'strict'}
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should pass with no connections (lines 49-50)
+        assert result is True
+    
+    @pytest.mark.asyncio
+    async def test_airgap_permissive_authorized_connections(self, monkeypatch):
+        """Test permissive Air-Gap mode with authorized connections."""
+        import psutil
+        
+        # Mock authorized connection
+        class MockConnection:
+            def __init__(self):
+                self.status = 'ESTABLISHED'
+                self.laddr = type('obj', (object,), {'ip': '127.0.0.1', 'port': 8080})
+                self.raddr = type('obj', (object,), {'ip': '10.0.0.1', 'port': 443})
+        
+        conn_dict = {
+            'local': '127.0.0.1:8080',
+            'remote': '10.0.0.1:443'
+        }
+        
+        def mock_net_connections(*args, **kwargs):
+            return [MockConnection()]
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {
+            'airgap_mode': 'permissive',
+            'allowed_connections': [conn_dict]  # This connection is allowed
+        }
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should pass with authorized connection (line 59)
+        assert result is True
+    
+    @pytest.mark.asyncio
+    async def test_enforce_firewall_generic_exception(self, monkeypatch):
+        """Test firewall check with generic exception."""
+        import platform
+        
+        # Mock platform.system to raise exception
+        def mock_system():
+            raise RuntimeError("Platform detection failed")
+        
+        monkeypatch.setattr(platform, 'system', mock_system)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        result = await shield.enforce_firewall()
+        
+        # Should handle exception gracefully (lines 116-117)
+        assert 'firewall_active' in result
+        assert result['firewall_active'] is False
+
+
+class TestShieldBearerPsutilExceptions:
+    """Test psutil exception handling in ShieldBearer."""
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_psutil_access_denied(self, monkeypatch):
+        """Test network connections check with psutil.AccessDenied."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise AccessDenied
+        def mock_net_connections(*args, **kwargs):
+            raise psutil.AccessDenied("Access denied to network connections")
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_psutil_no_such_process(self, monkeypatch):
+        """Test network connections check with psutil.NoSuchProcess."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise NoSuchProcess
+        def mock_net_connections(*args, **kwargs):
+            raise psutil.NoSuchProcess(pid=12345, name="test")
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_psutil_timeout_expired(self, monkeypatch):
+        """Test network connections check with psutil.TimeoutExpired."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise TimeoutExpired
+        def mock_net_connections(*args, **kwargs):
+            raise psutil.TimeoutExpired(seconds=5)
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_psutil_zombie_process(self, monkeypatch):
+        """Test network connections check with psutil.ZombieProcess."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise ZombieProcess
+        def mock_net_connections(*args, **kwargs):
+            raise psutil.ZombieProcess(pid=12345, name="test")
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_check_network_connections_generic_exception(self, monkeypatch):
+        """Test network connections check with generic exception."""
+        import psutil
+        
+        # Mock psutil.net_connections to raise generic exception
+        def mock_net_connections(*args, **kwargs):
+            raise RuntimeError("Generic error")
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        connections = await shield._check_network_connections()
+        
+        # Should return empty list gracefully
+        assert connections == []
+    
+    @pytest.mark.asyncio
+    async def test_airgap_strict_mode_with_active_connections(self, monkeypatch):
+        """Test strict Air-Gap mode detecting active connections."""
+        import psutil
+        
+        # Mock active connections
+        class MockConnection:
+            def __init__(self):
+                self.status = 'ESTABLISHED'
+                self.laddr = type('obj', (object,), {'ip': '127.0.0.1', 'port': 8080})
+                self.raddr = type('obj', (object,), {'ip': '8.8.8.8', 'port': 53})
+        
+        def mock_net_connections(*args, **kwargs):
+            return [MockConnection()]
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {'airgap_mode': 'strict'}
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should detect Air-Gap violation
+        assert result is False
+    
+    @pytest.mark.asyncio
+    async def test_airgap_permissive_mode_unauthorized_connections(self, monkeypatch):
+        """Test permissive Air-Gap mode with unauthorized connections."""
+        import psutil
+        
+        # Mock unauthorized connection
+        class MockConnection:
+            def __init__(self):
+                self.status = 'ESTABLISHED'
+                self.laddr = type('obj', (object,), {'ip': '127.0.0.1', 'port': 8080})
+                self.raddr = type('obj', (object,), {'ip': '8.8.8.8', 'port': 53})
+        
+        def mock_net_connections(*args, **kwargs):
+            return [MockConnection()]
+        
+        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        
+        config = {
+            'airgap_mode': 'permissive',
+            'allowed_connections': []  # No connections allowed
+        }
+        shield = ShieldBearer(config)
+        
+        result = await shield.check_airgap()
+        
+        # Should detect unauthorized connection
+        assert result is False
+    
+    @pytest.mark.asyncio
+    async def test_test_external_access_successful_connection(self, monkeypatch):
+        """Test external access with successful connection."""
+        import socket
+        
+        # Mock successful connection
+        class MockSocket:
+            def __init__(self, *args, **kwargs):
+                pass
+            
+            def settimeout(self, timeout):
+                pass
+            
+            def connect_ex(self, addr):
+                return 0  # Success
+            
+            def close(self):
+                pass
+        
+        monkeypatch.setattr(socket, 'socket', MockSocket)
+        
+        config = {}
+        shield = ShieldBearer(config)
+        
+        can_connect = await shield.test_external_access(host="8.8.8.8", port=53)
+        
+        # Should detect connection is possible (line 180)
+        assert can_connect is True

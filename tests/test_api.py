@@ -73,6 +73,81 @@ class TestAPIServer:
         
         # Cleanup
         await brain.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_lifespan_context_startup(self):
+        """Test API server lifespan startup code."""
+        from api.server import lifespan, load_config
+        from fastapi import FastAPI
+        import api.server as server
+        
+        # Create app
+        app = FastAPI()
+        
+        # Save original state
+        original_brain = server.leonidas_brain
+        original_processor = server.command_processor
+        original_config = server.config
+        
+        try:
+            # Test lifespan startup
+            async with lifespan(app):
+                # Verify that modules were initialized
+                assert server.leonidas_brain is not None
+                assert server.command_processor is not None
+                assert isinstance(server.config, dict)
+                assert 'system' in server.config
+        finally:
+            # Restore original state
+            server.leonidas_brain = original_brain
+            server.command_processor = original_processor
+            server.config = original_config
+    
+    @pytest.mark.asyncio
+    async def test_lifespan_context_shutdown(self):
+        """Test API server lifespan shutdown code."""
+        from api.server import lifespan
+        from fastapi import FastAPI
+        import api.server as server
+        
+        # Create app
+        app = FastAPI()
+        
+        # Save original state
+        original_brain = server.leonidas_brain
+        original_processor = server.command_processor
+        original_config = server.config
+        
+        try:
+            # Test lifespan with shutdown
+            async with lifespan(app):
+                # Store references to check they were cleaned up
+                brain_ref = server.leonidas_brain
+                assert brain_ref is not None
+            
+            # After context exit, shutdown should have been called
+            # (we can't easily verify this without mocking, but at least we tested the code path)
+        finally:
+            # Restore original state
+            server.leonidas_brain = original_brain
+            server.command_processor = original_processor
+            server.config = original_config
+    
+    @pytest.mark.asyncio
+    async def test_root_endpoint(self):
+        """Test root endpoint structure."""
+        from api.server import app
+        from httpx import AsyncClient
+        
+        async with AsyncClient(app=app, base_url="http://test") as client:
+            response = await client.get("/")
+            
+            assert response.status_code == 200
+            data = response.json()
+            assert data['system'] == "ΛΕΩΝΙΔΑΣ-AI PHALANX"
+            assert data['motto'] == "ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)"
+            assert data['version'] == "0.1.0"
+            assert data['status'] == "online"
 
 
 class TestHealthRoutes:
@@ -544,6 +619,133 @@ class TestMetricsRoutes:
         
         # Restabilește starea originală
         server.leonidas_brain = original_brain
+
+
+class TestCommandRoutesFullCoverage:
+    """Tests to achieve 100% coverage for command routes."""
+    
+    @pytest.mark.asyncio
+    async def test_get_system_status_no_processor(self):
+        """Test get_system_status când processor nu e inițializat."""
+        from api.routes.command import get_system_status
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await get_system_status("test_token")
+        
+        # line 64
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_analyze_risk_no_processor(self):
+        """Test analyze_risk când processor nu e inițializat."""
+        from api.routes.command import analyze_risk, RiskAnalysisRequest
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        request = RiskAnalysisRequest(
+            scenario_name="Test",
+            risk_factors=["factor1"],
+            severity=0.5,
+            complexity=0.5,
+            available_resources=0.5
+        )
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await analyze_risk(request, "test_token")
+        
+        # line 96
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_encrypt_data_no_processor(self):
+        """Test encrypt_data când processor nu e inițializat."""
+        from api.routes.command import encrypt_data, EncryptionRequest
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        request = EncryptionRequest(data="test data")
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await encrypt_data(request, "test_token")
+        
+        # line 133
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+    
+    @pytest.mark.asyncio
+    async def test_check_airgap_no_processor(self):
+        """Test check_airgap când processor nu e inițializat."""
+        from api.routes.command import check_airgap
+        from fastapi import HTTPException
+        import api.server as server
+        
+        # Salvează starea originală
+        original_processor = server.command_processor
+        
+        # Setează la None pentru test
+        server.command_processor = None
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await check_airgap("test_token")
+        
+        # line 153
+        assert exc_info.value.status_code == 503
+        
+        # Restabilește starea originală
+        server.command_processor = original_processor
+
+
+class TestAPIServerConfigLoading:
+    """Test configuration loading edge cases."""
+    
+    def test_load_config_file_exception(self, monkeypatch):
+        """Test load_config with file read exception."""
+        from api.server import load_config
+        import os
+        
+        # Mock os.path.exists to return True but open fails
+        def mock_exists(path):
+            return True
+        
+        def mock_open(*args, **kwargs):
+            raise PermissionError("Cannot read file")
+        
+        monkeypatch.setattr(os.path, 'exists', mock_exists)
+        monkeypatch.setattr('builtins.open', mock_open)
+        
+        # Should handle exception and return default config (lines 123-124)
+        config = load_config()
+        
+        assert 'system' in config
+        assert config['system']['name'] == "ΛΕΩΝΙΔΑΣ-AI PHALANX"
 
 
 class TestAPIServerEdgeCases:
