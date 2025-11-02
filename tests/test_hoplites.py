@@ -745,23 +745,17 @@ class TestSpartanGuardEdgeCases:
             pass
     
     @pytest.mark.asyncio
-    async def test_guard_without_key(self):
+    async def test_guard_without_key(self, monkeypatch):
         """Test Guard fără cheie master."""
         # Forțează crearea fără cheie prin config empty
-        import os
-        old_env = os.environ.get('SPARTA_MASTER_KEY')
-        if old_env:
-            del os.environ['SPARTA_MASTER_KEY']
+        # Use monkeypatch to safely manage environment variable
+        monkeypatch.delenv('SPARTA_MASTER_KEY', raising=False)
         
         config = {}
         guard = SpartanGuard(config)
         
         # Ar trebui să aibă o cheie temporară
         assert guard.master_key is not None
-        
-        # Restore env
-        if old_env:
-            os.environ['SPARTA_MASTER_KEY'] = old_env
 
 
 class TestShieldBearerEdgeCases:

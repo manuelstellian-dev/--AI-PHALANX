@@ -19,14 +19,13 @@ class TestAPIServer:
         assert config['system']['name'] == "ΛΕΩΝΙΔΑΣ-AI PHALANX"
         assert "ΜΟΛΩΝ ΛΑΒΕ" in config['system']['motto']
     
-    def test_verify_token_valid(self):
+    def test_verify_token_valid(self, monkeypatch):
         """Test verificare token valid."""
         from api.server import verify_token
         from fastapi.security import HTTPAuthorizationCredentials
-        import os
         
-        # Setează token-ul în environment
-        os.environ['SPARTA_AUTH_TOKEN'] = 'test_token'
+        # Setează token-ul în environment using monkeypatch
+        monkeypatch.setenv('SPARTA_AUTH_TOKEN', 'test_token')
         
         credentials = HTTPAuthorizationCredentials(
             scheme="Bearer",
@@ -36,15 +35,14 @@ class TestAPIServer:
         token = verify_token(credentials)
         assert token == "test_token"
     
-    def test_verify_token_invalid(self):
+    def test_verify_token_invalid(self, monkeypatch):
         """Test verificare token invalid."""
         from api.server import verify_token
         from fastapi.security import HTTPAuthorizationCredentials
         from fastapi import HTTPException
-        import os
         
-        # Setează token-ul în environment
-        os.environ['SPARTA_AUTH_TOKEN'] = 'correct_token'
+        # Setează token-ul în environment using monkeypatch
+        monkeypatch.setenv('SPARTA_AUTH_TOKEN', 'correct_token')
         
         credentials = HTTPAuthorizationCredentials(
             scheme="Bearer",

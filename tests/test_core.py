@@ -267,6 +267,10 @@ class TestCommandProcessor:
             await asyncio.wait_for(task, timeout=1.0)
         except asyncio.TimeoutError:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # Expected, task was cancelled
     
     @pytest.mark.asyncio
     async def test_homeostasis_loop_with_modules(self):
@@ -305,6 +309,10 @@ class TestCommandProcessor:
             await asyncio.wait_for(task, timeout=1.0)
         except asyncio.TimeoutError:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # Expected, task was cancelled
     
     @pytest.mark.asyncio
     async def test_command_processor_with_real_modules(self):
@@ -506,3 +514,7 @@ class TestLeondasBrainEdgeCases:
             await asyncio.wait_for(task, timeout=1.0)
         except asyncio.TimeoutError:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # Expected, task was cancelled
