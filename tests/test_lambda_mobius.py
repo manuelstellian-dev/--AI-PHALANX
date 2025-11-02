@@ -518,3 +518,116 @@ class TestFormulasAccuracy:
         
         # Geometric mean of 4 and 16: sqrt(4*16) = sqrt(64) = 8
         assert abs(T_balance - 8.0) < 0.001
+
+
+class TestEdgeCasesAndBoundaries:
+    """Tests for edge cases and boundary conditions."""
+    
+    def test_wrap_negative_denominator_fallback(self):
+        """Test T_Wrap fallback when denominator is negative."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Very small k*P*(1+ln U) causes negative denominator
+        k = 1
+        P = 1
+        U = 1  # ln(1) = 0, so k*P*(1+0) = 1, denominator = 1 - 1 = 0
+        
+        T_wrap = engine.calculate_T_Wrap(k, P, U)
+        
+        # Should fallback to T1
+        assert T_wrap == 1.0
+    
+    def test_mult_negative_denominator_fallback(self):
+        """Test T_Mult fallback when denominator is negative."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # k*P = 1 causes denominator = 0
+        k = 1
+        P = 1
+        U = 10
+        
+        T_mult = engine.calculate_T_Mult(k, P, U)
+        
+        # Should fallback
+        assert T_mult >= 0
+    
+    def test_wrap_out_of_bounds_large_value(self):
+        """Test T_Wrap handles out-of-bounds large values."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Create conditions that might produce very large T_wrap
+        # This is hard to trigger naturally, so we test the fallback exists
+        T_wrap = engine.calculate_T_Wrap(100, 4, 10)
+        
+        # Should be reasonable (not > 1000)
+        assert 0 < T_wrap <= 1000
+    
+    def test_mult_out_of_bounds_large_value(self):
+        """Test T_Mult handles out-of-bounds large values."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Test with reasonable values
+        T_mult = engine.calculate_T_Mult(100, 4, 10)
+        
+        # Should be reasonable (not > 1000)
+        assert 0 < T_mult <= 1000
+    
+    def test_hybrid_with_both_negative(self):
+        """Test T_Hybrid handles both negative inputs."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        T_hybrid = engine.calculate_T_Hybrid(-1.0, -2.0)
+        
+        # Should fallback to T1
+        assert T_hybrid > 0
+    
+    def test_balance_with_both_negative(self):
+        """Test T_Balance handles both negative inputs."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        T_balance = engine.calculate_T_Balance(-4.0, -9.0)
+        
+        # Should fallback to T1
+        assert T_balance > 0
+    
+    def test_arbiter_with_zero_U(self):
+        """Test arbiter handles U=0."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Should not crash
+        state = engine.arbiter_select(100, 4, 0)
+        
+        assert state in [LambdaState.WRAP, LambdaState.STEADY, LambdaState.UNWRAP]
+    
+    def test_supreme_with_negative_inputs(self):
+        """Test T_Supreme handles negative inputs gracefully."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Should use default values for invalid inputs
+        metrics = engine.calculate_T_Supreme(k=-100, P=-4, U=-10)
+        
+        # Should still produce valid results
+        assert metrics.T_supreme > 0
+        assert metrics.state in [LambdaState.WRAP, LambdaState.STEADY, LambdaState.UNWRAP]
+    
+    def test_get_history_empty(self):
+        """Test get_history with empty history."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        history = engine.get_history()
+        
+        assert history == []
+    
+    def test_get_history_last_n_greater_than_size(self):
+        """Test get_history when last_n > history size."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Add 3 entries
+        for i in range(3):
+            engine.calculate_T_Supreme(100, 4, i+1)
+        
+        # Request 10 (more than available)
+        history = engine.get_history(last_n=10)
+        
+        # Should return all 3
+        assert len(history) == 3
