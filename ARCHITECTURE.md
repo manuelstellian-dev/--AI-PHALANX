@@ -128,6 +128,59 @@
 └───────────────────────────────────────────────────────────────┘
 ```
 
+## FFP Integration with LeondasBrain
+
+The Fractal Flux Pipeline is fully integrated into the LeondasBrain core:
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│           LEONIDAS BRAIN (Core)                 │
+│  ┌──────────────────────────────────────────┐  │
+│  │  • Homeostasis loop                      │  │
+│  │  • Module orchestration                  │  │
+│  │  • Survival monitoring                   │  │
+│  └──────────────────────────────────────────┘  │
+│                    │                            │
+│                    ├──► FFP Pipeline            │
+│                    │    (autoreparatory)        │
+│                    │                            │
+│  ┌──────────────────────────────────────────┐  │
+│  │  FFP: Scan → Detect → Quarantine →      │  │
+│  │       Heal → Improve → Reinvest          │  │
+│  └──────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+### Methods
+
+- `start_ffp()`: Start FFP Pipeline in background
+- `get_ffp_status()`: Get current FFP status
+- `stop_ffp()`: Stop FFP Pipeline
+- `start_homeostasis()`: Start both homeostasis + FFP in parallel
+
+### Usage
+
+```python
+from core.leonidasbrain import LeondasBrain
+
+# Initialize
+brain = LeondasBrain(config)
+
+# FFP is automatically initialized
+# To start it:
+await brain.start_ffp()
+
+# Check status
+status = brain.get_ffp_status()
+print(f"FFP running: {status['running']}")
+print(f"Cycles completed: {status['cycle_count']}")
+
+# Stop when needed
+brain.stop_ffp()
+```
+
 ## HOPLITES Arsenal (Module de Acțiune)
 
 ```

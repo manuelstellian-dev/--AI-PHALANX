@@ -13,6 +13,7 @@ from loguru import logger
 
 from core.leonidasbrain import LeondasBrain
 from core.commandprocessor import CommandProcessor
+from control.kronos_arbiter import KronosArbiter
 from phalanx.helot import HelotModule
 from phalanx.agoge import AgogeModule
 from phalanx.krypteia import KrypteiaModule
@@ -150,6 +151,11 @@ async def initialize_system(config: dict):
     """
     # Inițializează Λ-Core
     brain = LeondasBrain(config)
+    
+    # Initialize Kronos-Arbiter
+    cpu_cores = config.get('hardware', {}).get('cpu_cores', 4)
+    brain.kronos = KronosArbiter(n_cores=cpu_cores)
+    logger.info(f"⏱️ Kronos-Arbiter initialized with {cpu_cores} cores")
     
     # Inițializează modulele Phalanx
     helot = HelotModule(config)

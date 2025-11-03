@@ -7,6 +7,7 @@ import asyncio
 import time
 from typing import Dict, Any
 from loguru import logger
+from control.fractal_pipeline import FractalFluxPipeline
 
 
 class LeondasBrain:
@@ -29,6 +30,10 @@ class LeondasBrain:
         self.lambda_tas = 1.0  # Timpul Autonom Spartan (factor de ritm)
         self.is_running = False
         self.modules = {}
+        
+        # Initialize FFP Pipeline
+        self.ffp = FractalFluxPipeline(self)
+        logger.info("🔄 FFP Pipeline initialized in LeondasBrain")
         
         logger.info("🛡️ ΛΕΩΝΙΔΑΣ Brain initialized")
         logger.info(f"🏛️ Motto: ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)")
@@ -163,3 +168,33 @@ class LeondasBrain:
             "modules_loaded": list(self.modules.keys()),
             "motto": "ΜΟΛΩΝ ΛΑΒΕ"
         }
+
+    async def start_ffp(self):
+        """
+        Start Fractal Flux Pipeline.
+        
+        The FFP runs continuously in the background, executing the
+        6-phase autoreparatory cycle: Scan → Detect → Quarantine → Heal → Improve → Reinvest
+        """
+        logger.info("🚀 Starting FFP Pipeline...")
+        await self.ffp.run_forever()
+
+    def get_ffp_status(self) -> dict:
+        """
+        Get current FFP Pipeline status.
+        
+        Returns:
+            Dictionary with FFP status information
+        """
+        if hasattr(self, 'ffp'):
+            return self.ffp.get_status()
+        else:
+            return {'error': 'FFP not initialized'}
+
+    def stop_ffp(self):
+        """Stop FFP Pipeline."""
+        if hasattr(self, 'ffp'):
+            logger.info("🛑 Stopping FFP Pipeline...")
+            self.ffp.stop()
+        else:
+            logger.warning("⚠️ FFP not initialized, cannot stop")
