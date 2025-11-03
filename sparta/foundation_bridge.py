@@ -322,3 +322,119 @@ class FoundationBridge:
         
         logger.debug(f"✅ Honest response generated with marker: {marker}")
         return result
+    
+    def balance_entropy(self) -> Dict:
+        """
+        Verify Foundation consistency and quality.
+        
+        Analyzes the foundation to ensure all concepts meet quality standards
+        (confidence >= 0.95) and calculates overall consistency metrics.
+        
+        Returns:
+            Dictionary containing:
+            - mean_confidence: Average confidence across all concepts
+            - concept_count: Total number of concepts
+            - consistency_score: Score from 0-1 indicating quality
+            - low_quality_concepts: List of concept IDs with confidence < 0.95
+        """
+        logger.debug("⚖️ Balancing entropy - checking Foundation quality")
+        
+        if not self.foundation.concepts:
+            return {
+                'mean_confidence': 0.0,
+                'concept_count': 0,
+                'consistency_score': 0.0,
+                'low_quality_concepts': []
+            }
+        
+        # Calculate statistics
+        confidences = [c['confidence'] for c in self.foundation.concepts.values()]
+        mean_confidence = sum(confidences) / len(confidences)
+        
+        # Find low-quality concepts (< 0.95)
+        low_quality = [
+            concept_id 
+            for concept_id, concept in self.foundation.concepts.items()
+            if concept['confidence'] < 0.95
+        ]
+        
+        # Calculate consistency score
+        # Perfect score (1.0) = all concepts >= 0.95
+        # Score decreases with low-quality concepts
+        consistency_score = 1.0 - (len(low_quality) / len(self.foundation.concepts))
+        
+        result = {
+            'mean_confidence': mean_confidence,
+            'concept_count': len(self.foundation.concepts),
+            'consistency_score': consistency_score,
+            'low_quality_concepts': low_quality
+        }
+        
+        if low_quality:
+            logger.warning(
+                f"⚠️ Found {len(low_quality)} low-quality concepts (< 0.95): {low_quality[:5]}"
+            )
+        else:
+            logger.info("✅ All concepts meet SPARTA quality standards (>= 0.95)")
+        
+        logger.debug(
+            f"📊 Entropy balance: mean={mean_confidence:.3f}, "
+            f"consistency={consistency_score:.3f}"
+        )
+        
+        return result
+    
+    def route_to_reflexive_generator(self, topic: Optional[str] = None) -> List[Dict]:
+        """
+        Prepare concepts for ReflexiveGenerator (NOT raw definitions).
+        
+        This method extracts concepts WITHOUT their definitions, forcing the
+        Generator to use logical reasoning rather than text repetition. This
+        is a key anti-hallucination mechanism.
+        
+        Args:
+            topic: Optional topic to filter concepts (if None, returns all)
+            
+        Returns:
+            List of dictionaries containing:
+            - concept: concept ID
+            - trigger: topic name (human-readable)
+            - relations: list of related concept IDs
+            - weight: confidence score
+            - reflex_tag: reflex tag identifier
+            
+            NOTE: Definitions, examples, and other detail fields are NOT included.
+                  This forces logical expansion rather than text regurgitation.
+        """
+        logger.debug(f"🔀 Routing concepts to Reflexive Generator (topic: {topic or 'all'})")
+        
+        # TODO: Integrate with Λ-Guide (selects best concept for topic)
+        # TODO: Integrate with Λ-Pattern (detects which concepts apply to query pattern)
+        
+        # Get relevant concepts
+        if topic:
+            # Filter by topic (simple keyword matching for now)
+            topic_lower = topic.lower()
+            relevant_concepts = [
+                concept for concept in self.foundation.concepts.values()
+                if (topic_lower in concept.get('topic', '').lower() or
+                    topic_lower in concept['id'].replace('_', ' '))
+            ]
+        else:
+            relevant_concepts = list(self.foundation.concepts.values())
+        
+        # Prepare routing information (NO definitions or examples!)
+        routed_concepts = []
+        
+        for concept in relevant_concepts:
+            routed_concepts.append({
+                'concept': concept['id'],
+                'trigger': concept.get('topic', concept['id']),
+                'relations': concept.get('relations', []),
+                'weight': concept['confidence'],
+                'reflex_tag': concept.get('reflex_tag', 'UNKNOWN')
+            })
+        
+        logger.debug(f"✅ Routed {len(routed_concepts)} concepts to Generator")
+        
+        return routed_concepts

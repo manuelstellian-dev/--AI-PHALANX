@@ -71,12 +71,19 @@ class SemanticFoundation:
                     try:
                         concept = json.loads(line)
                         
-                        # Validate required fields
-                        required_fields = ['id', 'domain', 'definition', 'confidence', 
-                                         'source', 'relations', 'created_at', 'verified_by']
+                        # Validate required fields (enhanced 16-field format)
+                        required_fields = [
+                            'id', 'domain', 'subdomain', 'topic', 'definition',
+                            'formal_statement', 'relations', 'prerequisites', 'confidence',
+                            'source', 'reflex_tag', 'examples', 'counterexamples',
+                            'applications', 'verification', 'uncertainty'
+                        ]
                         
                         if not all(field in concept for field in required_fields):
-                            logger.warning(f"⚠️ Line {line_num}: Missing required fields, skipping")
+                            missing = [f for f in required_fields if f not in concept]
+                            logger.warning(
+                                f"⚠️ Line {line_num}: Missing required fields {missing}, skipping"
+                            )
                             continue
                         
                         # Add concept
@@ -230,10 +237,12 @@ class SemanticFoundation:
             True if concept was added successfully, False otherwise
         """
         try:
-            # Validate required fields
+            # Validate core required fields (minimum for add_concept)
+            # Full 16-field validation done in load_memory
             required_fields = ['id', 'domain', 'definition', 'confidence']
             if not all(field in concept for field in required_fields):
-                logger.error(f"❌ Missing required fields in concept")
+                missing = [f for f in required_fields if f not in concept]
+                logger.error(f"❌ Missing required fields in concept: {missing}")
                 return False
             
             concept_id = concept['id']
