@@ -34,9 +34,9 @@ class TestSemanticFoundation:
         
         if os.path.exists(memory_path):
             count = foundation.load_memory(memory_path)
-            assert count == 132  # Should load 132 concepts (44 Phase 1 + 88 Phase 2)
-            assert len(foundation.concepts) == 132
-            assert len(foundation.domains) == 14  # 14 domains
+            assert count == 308  # Should load 308 concepts (Phase 1 + Phase 2 + Phase 3)
+            assert len(foundation.concepts) == 308
+            assert len(foundation.domains) >= 14  # At least 14 domains
     
     def test_load_memory_file_not_found(self):
         """Test load_memory with non-existent file."""
