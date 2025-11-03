@@ -9,7 +9,7 @@ import json
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 
@@ -130,7 +130,7 @@ class SpartanVectorStore:
             text=text,
             embedding=embedding,
             metadata=metadata or {},
-            created_at=datetime.utcnow().isoformat()
+            created_at=datetime.now(timezone.utc).isoformat()
         )
         
         self.entries[id] = entry
@@ -162,7 +162,7 @@ class SpartanVectorStore:
                 text=text,
                 embedding=embedding,
                 metadata=metadata or {},
-                created_at=datetime.utcnow().isoformat()
+                created_at=datetime.now(timezone.utc).isoformat()
             )
             self.entries[id] = entry
             results.append(entry)

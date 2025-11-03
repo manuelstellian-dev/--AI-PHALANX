@@ -6,7 +6,7 @@ Combines encryption with semantic search capabilities
 import os
 import json
 from typing import Dict, List, Tuple, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from loguru import logger
 from cryptography.fernet import Fernet
 from .vector_store import SpartanVectorStore, VectorEntry
@@ -77,7 +77,7 @@ class SpartanVault:
         result = {
             'id': id,
             'encrypted': True,
-            'stored_at': datetime.utcnow().isoformat(),
+            'stored_at': datetime.now(timezone.utc).isoformat(),
             'metadata': metadata or {}
         }
         
