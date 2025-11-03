@@ -211,5 +211,7 @@ __marimo__/
 config/spartan_keys.yaml
 data/encrypted_vault/
 data/encrypted_vault/**
+data/vault/
+data/vault/**
 logs/
 *.log
