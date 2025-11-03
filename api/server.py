@@ -204,11 +204,12 @@ async def initialize_system(config: dict):
 
 
 # Import routes
-from api.routes import health, command, metrics
+from api.routes import health, command, metrics, vault
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(command.router, prefix="/api/v1", tags=["commands"])
 app.include_router(metrics.router, prefix="/api/v1", tags=["metrics"])
+app.include_router(vault.router, prefix="/api/v1/vault", tags=["vault"])
 
 
 @app.get("/")
