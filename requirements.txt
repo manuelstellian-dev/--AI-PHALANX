@@ -33,3 +33,6 @@ ruff==0.1.6
 
 # RAG Vectorial
 sentence-transformers>=2.2.0
+
+# SPARTA Foundation - Graph-based knowledge management
+networkx>=3.0
