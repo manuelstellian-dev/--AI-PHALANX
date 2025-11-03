@@ -18,14 +18,25 @@ from api.server import app
 
 # Mock SentenceTransformer for tests
 class MockSentenceTransformer:
-    """Mock SentenceTransformer for testing without network access."""
+    """
+    Mock SentenceTransformer for testing without network access.
+    
+    Note: Uses deterministic hash-based seeding for consistent test results.
+    Hash collisions are possible but unlikely for test data.
+    """
     
     def __init__(self, model_name=None):
         """Initialize mock model."""
         self.model_name = model_name
     
     def encode(self, text, convert_to_numpy=True, show_progress_bar=False):
-        """Generate mock embeddings."""
+        """
+        Generate mock embeddings using deterministic random generation.
+        
+        The modulo operation (% 2**32) ensures seed fits in 32-bit integer.
+        This is sufficient for test purposes, though hash collisions are
+        theoretically possible with a large number of unique texts.
+        """
         if isinstance(text, str):
             # Single text
             np.random.seed(hash(text) % (2**32))
@@ -352,6 +363,32 @@ class TestSpartanVectorStore:
         
         assert os.path.exists(pickle_file)
         assert os.path.exists(json_file)
+    
+    def test_save_to_disk_error(self, temp_storage):
+        """Test error handling when saving to disk fails."""
+        store = SpartanVectorStore(storage_path=temp_storage)
+        store.add_entry(id="doc1", text="Test")
+        
+        # Make directory read-only to force save error
+        os.chmod(temp_storage, 0o444)
+        
+        try:
+            with pytest.raises(Exception):
+                store.save_to_disk()
+        finally:
+            # Restore permissions
+            os.chmod(temp_storage, 0o755)
+    
+    def test_load_from_disk_error(self, temp_storage):
+        """Test error handling when loading from disk fails."""
+        # Create corrupted pickle file
+        pickle_path = os.path.join(temp_storage, 'vector_store.pkl')
+        with open(pickle_path, 'wb') as f:
+            f.write(b"corrupted pickle data")
+        
+        # Should handle error gracefully and start with empty entries
+        store = SpartanVectorStore(storage_path=temp_storage)
+        assert store.count() == 0
 
 
 class TestSpartanVault:
@@ -528,6 +565,65 @@ class TestSpartanVault:
         
         assert vault2.vector_store.count() == 1
         assert len(vault2.encrypted_storage) == 1
+    
+    def test_retrieve_decrypt_error(self, vault):
+        """Test error handling when decryption fails."""
+        # Store with one key
+        vault.store(id="test1", data="Secret data")
+        
+        # Corrupt the encrypted data
+        vault.encrypted_storage["test1"] = b"corrupted_data"
+        
+        # Should return None on decryption error
+        result = vault.retrieve("test1")
+        assert result is None
+    
+    def test_semantic_search_decrypt_failure(self, vault):
+        """Test semantic search when decryption fails."""
+        vault.store_with_embedding(id="doc1", text="Test document for semantic search")
+        
+        # Corrupt encrypted data
+        vault.encrypted_storage["doc1"] = b"corrupted"
+        
+        # Should still return results with original text
+        # Use exact same query to ensure match
+        results = vault.semantic_search("Test document for semantic search", decrypt=True, min_score=0.0, top_k=10)
+        assert len(results) > 0
+        assert results[0]['text'] == "Test document for semantic search"  # Falls back to non-decrypted
+    
+    def test_find_similar_decrypt_failure(self, vault):
+        """Test find_similar when decryption fails."""
+        vault.store_with_embedding(id="doc1", text="First document")
+        vault.store_with_embedding(id="doc2", text="Second document")
+        
+        # Corrupt encrypted data for doc2
+        vault.encrypted_storage["doc2"] = b"corrupted"
+        
+        # Should still work with fallback
+        results = vault.find_similar("doc1", decrypt=True)
+        assert len(results) > 0
+    
+    def test_find_similar_decrypt_success(self, vault):
+        """Test find_similar with successful decryption."""
+        vault.store_with_embedding(id="doc1", text="First document")
+        vault.store_with_embedding(id="doc2", text="Second document")
+        
+        # Both should be encrypted and decryptable
+        results = vault.find_similar("doc1", decrypt=True)
+        assert len(results) > 0
+        # Should have decrypted text
+        assert results[0]['text'] == "Second document"
+    
+    def test_load_encrypted_data_error(self, temp_storage):
+        """Test error handling when loading encrypted data fails."""
+        # Create invalid JSON file
+        encrypted_path = os.path.join(temp_storage, 'encrypted.json')
+        with open(encrypted_path, 'w') as f:
+            f.write("invalid json{")
+        
+        # Should handle error gracefully
+        vault = SpartanVault(storage_path=temp_storage)
+        assert len(vault.encrypted_storage) == 0
 
 
 @pytest.mark.asyncio

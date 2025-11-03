@@ -150,7 +150,7 @@ class SpartanVectorStore:
         """
         ids = [e[0] for e in entries]
         texts = [e[1] for e in entries]
-        metadatas = [e[2] if len(e) > 2 else {} for e in entries]
+        metadatas = [e[2] if len(e) >= 3 else {} for e in entries]
         
         # Batch embed all texts
         embeddings = self.embed_batch(texts)

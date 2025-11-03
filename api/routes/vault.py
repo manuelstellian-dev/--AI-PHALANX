@@ -196,10 +196,12 @@ async def find_similar(id: str, top_k: int = 5, decrypt: bool = False,
     **ΜΟΛΩΝ ΛΑΒΕ!** - Discover related content
     """
     try:
-        results = vault.find_similar(id, top_k, decrypt)
-        
-        if not results and not vault.vector_store.get_entry(id):
+        # Check if entry exists first
+        entry = vault.vector_store.get_entry(id)
+        if not entry:
             raise HTTPException(status_code=404, detail=f"Entry not found: {id}")
+        
+        results = vault.find_similar(id, top_k, decrypt)
         
         return {
             'id': id,

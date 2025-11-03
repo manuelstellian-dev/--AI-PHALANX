@@ -158,9 +158,15 @@ class SpartanVault:
         
         output = []
         for entry, score in results:
+            text = entry.text
+            if decrypt and entry.id in self.encrypted_storage:
+                decrypted = self.retrieve(entry.id)
+                if decrypted:
+                    text = decrypted
+            
             result_dict = {
                 'id': entry.id,
-                'text': entry.text if not decrypt else self.retrieve(entry.id) or entry.text,
+                'text': text,
                 'score': score,
                 'metadata': entry.metadata,
                 'created_at': entry.created_at
@@ -250,9 +256,15 @@ class SpartanVault:
         
         output = []
         for entry, score in results:
+            text = entry.text
+            if decrypt and entry.id in self.encrypted_storage:
+                decrypted = self.retrieve(entry.id)
+                if decrypted:
+                    text = decrypted
+            
             result_dict = {
                 'id': entry.id,
-                'text': entry.text if not decrypt else self.retrieve(entry.id) or entry.text,
+                'text': text,
                 'score': score,
                 'metadata': entry.metadata,
                 'created_at': entry.created_at
