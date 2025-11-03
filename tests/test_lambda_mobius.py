@@ -422,6 +422,38 @@ class TestKronosIntegration:
         assert hasattr(kronos, 'lambda_mobius')
         assert isinstance(kronos.lambda_mobius, LambdaMobiusEngine)
     
+    def test_kronos_calculate_theta_default_fallback(self):
+        """Test that calculate_theta returns default when no mode matches."""
+        from control.kronos_arbiter import ThetaMode
+        
+        kronos = KronosArbiter(n_cores=4, theta_mode=ThetaMode.FIXED)
+        
+        # For FIXED mode, should return default_theta
+        theta = kronos.calculate_theta()
+        assert theta == kronos.default_theta
+        
+        # Test with invalid mode to trigger fallback (line 184)
+        # This is defensive code that shouldn't normally execute
+        kronos.theta_mode = "invalid_mode"  # Force invalid state
+        theta = kronos.calculate_theta()
+        assert theta == kronos.default_theta
+    
+    def test_kronos_history_limit(self):
+        """Test that Kronos execution history is limited to 100 entries."""
+        kronos = KronosArbiter(n_cores=4)
+        
+        # Add more than 100 entries
+        for i in range(150):
+            kronos.calculate_metrikos(
+                t_sequential=10.0,
+                theta=0.85,
+                lambda_balance=0.95,
+                eta_overhead=0.90
+            )
+        
+        # Should be limited to 100
+        assert len(kronos.execution_history) == 100
+    
     def test_kronos_calculate_supreme_time(self):
         """Test calculate_supreme_time method in Kronos."""
         kronos = KronosArbiter(n_cores=4)
@@ -631,3 +663,98 @@ class TestEdgeCasesAndBoundaries:
         
         # Should return all 3
         assert len(history) == 3
+    
+    def test_wrap_out_of_bounds_triggers_warning(self):
+        """Test T_Wrap when result would be > 1000."""
+        engine = LambdaMobiusEngine(T1=2000.0)
+        
+        # With T1=2000 and parameters that give denominator close to 1
+        # Result will be > 1000, triggering the warning
+        T_wrap = engine.calculate_T_Wrap(k=1000, P=1000, U=100)
+        
+        # Should fallback to T1 when out of bounds
+        assert T_wrap == 2000.0
+    
+    def test_mult_out_of_bounds_triggers_warning(self):
+        """Test T_Mult when result would be > 1000."""
+        engine = LambdaMobiusEngine(T1=2000.0)
+        
+        # Large T1 with parameters that give denominator close to 1
+        # T_mult = (2000 * ln(1000)) / (1 - 1/100000) ≈ 2000 * 6.9 > 1000
+        T_mult = engine.calculate_T_Mult(k=1000, P=100, U=1000)
+        
+        # Should return fallback value (T1 * ln(U))
+        import math
+        expected = 2000.0 * math.log(1000)
+        assert abs(T_mult - expected) < 0.1
+    
+    def test_hybrid_denominator_zero(self):
+        """Test T_Hybrid when T_wrap + T_mult would be zero or negative."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Both negative should trigger fallback
+        T_hybrid = engine.calculate_T_Hybrid(-5.0, -5.0)
+        
+        # Should return a positive value (fallback)
+        assert T_hybrid > 0
+    
+    def test_hybrid_with_negative_sum(self):
+        """Test T_Hybrid when sum of inputs would be negative."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Create scenario where sum is negative/zero
+        # This triggers line 213
+        T_hybrid = engine.calculate_T_Hybrid(-10.0, 5.0)
+        
+        # Should return fallback
+        assert T_hybrid > 0
+    
+    def test_hybrid_with_very_small_values(self):
+        """Test T_Hybrid with very small positive values."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Very small positive values should still work
+        T_hybrid = engine.calculate_T_Hybrid(1e-10, 1e-10)
+        assert T_hybrid >= 0  # May be zero due to floating point precision
+    
+    def test_wrap_exception_handling(self):
+        """Test T_Wrap exception handling with invalid math operation."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Mock the math.log to raise an exception
+        import unittest.mock as mock
+        import math
+        
+        with mock.patch('math.log', side_effect=ValueError("Test error")):
+            T_wrap = engine.calculate_T_Wrap(100, 4, 10)
+            
+            # Should fallback to T1
+            assert T_wrap == 1.0
+    
+    def test_mult_exception_handling(self):
+        """Test T_Mult exception handling with invalid math operation."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Mock the math.log to raise an exception
+        import unittest.mock as mock
+        import math
+        
+        with mock.patch('math.log', side_effect=ValueError("Test error")):
+            T_mult = engine.calculate_T_Mult(100, 4, 10)
+            
+            # Should fallback to T1
+            assert T_mult == 1.0
+    
+    def test_arbiter_exception_handling(self):
+        """Test arbiter_select exception handling."""
+        engine = LambdaMobiusEngine(T1=1.0)
+        
+        # Mock math.log to raise an exception
+        import unittest.mock as mock
+        import math
+        
+        with mock.patch('math.log', side_effect=ValueError("Test error")):
+            state = engine.arbiter_select(100, 4, 10)
+            
+            # Should fallback to STEADY
+            assert state == LambdaState.STEADY

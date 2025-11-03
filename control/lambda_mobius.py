@@ -208,10 +208,8 @@ class LambdaMobiusEngine:
             logger.warning(f"Invalid inputs for T_Hybrid: T_wrap={T_wrap}, T_mult={T_mult}")
             return min(T_wrap, T_mult) if min(T_wrap, T_mult) > 0 else self.T1
         
+        # At this point, both T_wrap and T_mult are > 0, so denominator is always > 0
         denominator = T_wrap + T_mult
-        if denominator <= 0:
-            return self.T1
-        
         T_hybrid = (T_wrap * T_mult) / denominator
         return T_hybrid
     
