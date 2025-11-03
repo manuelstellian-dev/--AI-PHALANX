@@ -17,6 +17,7 @@ from enum import Enum
 import math
 import time
 from loguru import logger
+from control.lambda_mobius import LambdaMobiusEngine, LambdaState, LambdaMetrics
 
 
 class ThetaMode(str, Enum):
@@ -110,6 +111,9 @@ class KronosArbiter:
         
         # Mapare Theta -> Dynamis (putere efectivă)
         self.theta_to_dynamis_map: Dict[float, float] = {}
+        
+        # Initialize Λ-MÖBIUS Engine
+        self.lambda_mobius = LambdaMobiusEngine(T1=1.0)
         
         logger.info(f"🕐 Kronos-Arbiter initialized with {n_cores} cores")
         logger.info(f"⚙️ Theta mode: {theta_mode}, defaults: Θ={default_theta}, Λ={default_lambda}, η={default_eta}")
@@ -405,3 +409,29 @@ class KronosArbiter:
             'max_speedup': max(h['speedup'] for h in self.execution_history),
             'min_speedup': min(h['speedup'] for h in self.execution_history)
         }
+    
+    def calculate_supreme_time(self, k: int = 100, P: int = None, U: int = 1) -> LambdaMetrics:
+        """
+        Calculate T_Λ^Supreme using Λ-MÖBIUS Engine.
+        
+        Args:
+            k: Compression constant (default 100)
+            P: Parallelism factor (None = use n_cores)
+            U: Universe size/workload factor (default 1)
+            
+        Returns:
+            Complete LambdaMetrics with all temporal compression values
+        """
+        if P is None:
+            P = self.n_cores
+        
+        return self.lambda_mobius.calculate_T_Supreme(k, P, U)
+    
+    def get_lambda_state(self) -> LambdaState:
+        """
+        Get current Lambda state from Λ-MÖBIUS Engine.
+        
+        Returns:
+            Current LambdaState (WRAP/STEADY/UNWRAP)
+        """
+        return self.lambda_mobius.get_current_state()

@@ -138,3 +138,61 @@ async def get_json_metrics(token: str = Depends(server.verify_token)) -> Dict[st
         Metrici în format JSON
     """
     return await get_metrics()
+
+
+@router.get("/lambda-mobius")
+async def get_lambda_mobius_metrics(token: str = Depends(server.verify_token)) -> Dict[str, Any]:
+    """
+    Get Λ-MÖBIUS Engine metrics.
+    Returns complete temporal compression metrics.
+    
+    Returns:
+        Dictionary with current metrics, state, and history
+    """
+    try:
+        brain = server.leonidas_brain
+        
+        if brain is None:
+            return {"error": "ΛΕΩΝΙΔΑΣ Brain not initialized"}
+        
+        if not hasattr(brain, 'kronos'):
+            # Try to get kronos from modules
+            if hasattr(brain, 'modules') and 'kronos' in brain.modules:
+                kronos = brain.modules['kronos']
+            else:
+                return {"error": "Kronos-Arbiter not initialized"}
+        else:
+            kronos = brain.kronos
+        
+        # Calculate number of modules/units for U parameter
+        U = 1
+        if hasattr(brain, 'modules'):
+            if 'phalanx' in brain.modules:
+                U += len(brain.modules.get('phalanx', {}))
+            if 'hoplites' in brain.modules:
+                U += len(brain.modules.get('hoplites', {}))
+        
+        # Calculate current metrics
+        metrics = kronos.calculate_supreme_time(
+            k=100,
+            P=kronos.n_cores,
+            U=U
+        )
+        
+        # Get state
+        state = kronos.get_lambda_state()
+        
+        # Get history
+        history = kronos.lambda_mobius.get_history(last_n=10)
+        
+        return {
+            "current_metrics": metrics.to_dict(),
+            "current_state": state.name,
+            "state_value": state.value,
+            "history": history,
+            "timestamp": time.time()
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Λ-Möbius metrics error: {e}")
+        return {"error": str(e)}
