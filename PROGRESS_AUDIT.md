@@ -11,19 +11,18 @@
 ### 🏛️ Core Infrastructure (Target: 100%)
 **Status:** 86% Complete (18/21)
 
-- [~] Core System: 67% (2/3 files, missing full integration)
-- [x] Phalanx Modules: 100% (all 4 modules operational)
-- [x] Hoplites Arsenal: 100% (all 5 modules operational)
-- [~] API Routes: 71% (5/7 routes, some initialization files minimal)
+- [ ] Core System: 67%
+- [] Phalanx Modules: 100%
+- [] Hoplites Arsenal: 100%
+- [ ] API Routes: 71%
 
 ### 🎓 SPARTA Foundation (Target: 100%)
-**Status:** 100% Complete ✅ (4/4 modules + semantic_memory.jsonl)
+**Status:** 100% Complete (4/4)
 
-- [x] reflexive_generator.py (454 LOC, fully implemented)
-- [x] foundation_bridge.py (440 LOC, integration complete)
-- [x] semantic_foundation.py (430 LOC, 3-layer architecture)
-- [x] semantic_memory.jsonl (401KB, 100+ concepts)
-- [x] __init__.py (module initialization)
+- [x] reflexive_generator
+- [x] foundation_bridge
+- [x] semantic_foundation
+- [x] __init__
 
 ### 🔮 Λ-Modules (Target: 100%)
 **Status:** 0% Complete (0/7)
