@@ -292,6 +292,13 @@ class KronosArbiter:
             t_sequential, theta, lambda_balance, eta_overhead, n_cores
         )
         
+        # Legea lui Amdahl este o limită superioară: fracțiunea serială nu poate
+        # fi accelerată, deci speedup-ul nu poate depăși 1 / ((1-P) + P/N).
+        # Cu amdahl_fraction = 1.0 limita este N, iar N×Θ×Λ×η ≤ N - fără efect.
+        if 0.0 <= amdahl_fraction < 1.0 and n_cores > 0:
+            amdahl_bound = self.calculate_amdahl_aristeia(amdahl_fraction, n_cores)
+            t_parallel = max(t_parallel, t_sequential / amdahl_bound)
+        
         # Calculează speedup
         speedup = t_sequential / t_parallel if t_parallel > 0 else 1.0
         

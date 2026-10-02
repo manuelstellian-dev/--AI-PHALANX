@@ -26,8 +26,22 @@ def get_vault() -> SpartanVault:
     """
     global _vault
     if _vault is None:
-        _vault = SpartanVault()
-        logger.info("🏛️ Initialized SpartanVault for API")
+        import os
+        import api.server as server
+        
+        vault_config = server.get_section(server.config, 'vault')
+        if vault_config is server.config:
+            vault_config = {}
+        storage_path = vault_config.get('storage_path', 'data/vault')
+        if not os.path.isabs(storage_path):
+            # Aceeași bază ca Thermopylae, independent de directorul curent
+            storage_path = os.path.join(server.REPO_ROOT, storage_path)
+        
+        _vault = SpartanVault(
+            storage_path=storage_path,
+            index_plaintext=vault_config.get('index_plaintext', False)
+        )
+        logger.info(f"🏛️ Initialized SpartanVault for API at {storage_path}")
     return _vault
 
 

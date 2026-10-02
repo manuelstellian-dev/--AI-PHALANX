@@ -12,7 +12,7 @@ from httpx import AsyncClient
 from unittest.mock import patch
 
 from vault.vector_store import SpartanVectorStore, VectorEntry
-from vault.spartan_vault import SpartanVault
+from vault.spartan_vault import SpartanVault, REDACTED_TEXT
 from api.server import app
 
 
@@ -383,6 +383,22 @@ class TestSpartanVectorStore:
             # Restore permissions
             os.chmod(temp_storage, 0o755)
     
+    def test_load_prefers_json_over_pickle(self, temp_storage):
+        """Entries reload from JSON; a tampered pickle is never unpickled."""
+        store = SpartanVectorStore(storage_path=temp_storage)
+        store.add_entry(id="doc1", text="Persisted entry")
+        store.save_to_disk()
+        
+        # Replace the pickle with garbage - JSON must be used instead
+        with open(os.path.join(temp_storage, 'vector_store.pkl'), 'wb') as f:
+            f.write(b"not a pickle")
+        
+        reloaded = SpartanVectorStore(storage_path=temp_storage)
+        assert reloaded.count() == 1
+        entry = reloaded.get_entry("doc1")
+        assert entry.text == "Persisted entry"
+        assert isinstance(entry.embedding, np.ndarray)
+    
     def test_load_from_disk_error(self, temp_storage):
         """Test error handling when loading from disk fails."""
         # Create corrupted pickle file
@@ -588,11 +604,62 @@ class TestSpartanVault:
         # Corrupt encrypted data
         vault.encrypted_storage["doc1"] = b"corrupted"
         
-        # Should still return results with original text
-        # Use exact same query to ensure match
+        # Should still return results, but never fall back to plaintext:
+        # the index only holds the redaction marker for encrypted entries
         results = vault.semantic_search("Test document for semantic search", decrypt=True, min_score=0.0, top_k=10)
         assert len(results) > 0
-        assert results[0]['text'] == "Test document for semantic search"  # Falls back to non-decrypted
+        assert results[0]['text'] == REDACTED_TEXT
+    
+    def test_encrypted_entries_not_exposed_without_decrypt(self, vault):
+        """Encrypted entries return the marker, not plaintext, when decrypt=False."""
+        vault.store_with_embedding(id="s1", text="TOP SECRET launch code 1234")
+        
+        results = vault.semantic_search("TOP SECRET launch code 1234", decrypt=False, top_k=1)
+        assert results[0]['text'] == REDACTED_TEXT
+        assert vault.exact_search("s1", decrypt=False)['text'] == REDACTED_TEXT
+        # Authorized decryption still returns the original
+        assert vault.exact_search("s1", decrypt=True)['text'] == "TOP SECRET launch code 1234"
+    
+    def test_no_plaintext_written_to_disk(self, vault, temp_storage):
+        """save_to_disk must not persist plaintext of encrypted entries."""
+        vault.store_with_embedding(id="s1", text="TOP SECRET launch code 1234")
+        vault.save_to_disk()
+        
+        for root, _dirs, files in os.walk(temp_storage):
+            for name in files:
+                with open(os.path.join(root, name), 'rb') as f:
+                    assert b"TOP SECRET" not in f.read(), name
+    
+    def test_index_plaintext_opt_in_preserves_legacy_behaviour(self, temp_storage):
+        """index_plaintext=True keeps plaintext in the index (explicit opt-in)."""
+        vault = SpartanVault(storage_path=temp_storage, index_plaintext=True)
+        vault.store_with_embedding(id="doc1", text="Public document")
+        vault.encrypted_storage["doc1"] = b"corrupted"
+        
+        results = vault.semantic_search("Public document", decrypt=True, top_k=1)
+        assert results[0]['text'] == "Public document"
+    
+    def test_data_survives_restart(self, temp_storage):
+        """A new vault on the same storage reuses the persisted key."""
+        vault = SpartanVault(storage_path=temp_storage)
+        vault.store_with_embedding(id="s1", text="persisted secret")
+        vault.save_to_disk()
+        
+        restarted = SpartanVault(storage_path=temp_storage)
+        assert restarted.retrieve("s1") == "persisted secret"
+        assert restarted.exact_search("s1")['text'] == "persisted secret"
+    
+    def test_vault_key_from_environment(self, temp_storage, monkeypatch):
+        """SPARTA_VAULT_KEY takes precedence and is never written to disk."""
+        from cryptography.fernet import Fernet
+        key = Fernet.generate_key()
+        monkeypatch.setenv('SPARTA_VAULT_KEY', key.decode('utf-8'))
+        
+        vault = SpartanVault(storage_path=temp_storage)
+        assert vault.encryption_key == key
+        vault.store_with_embedding(id="s1", text="env keyed")
+        vault.save_to_disk()
+        assert not os.path.exists(os.path.join(temp_storage, 'encryption.key'))
     
     def test_find_similar_decrypt_failure(self, vault):
         """Test find_similar when decryption fails."""
@@ -636,7 +703,23 @@ class TestVaultAPIEndpoints:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        return AsyncClient(app=app, base_url="http://test")
+        from api.server import get_expected_token
+        return AsyncClient(
+            app=app,
+            base_url="http://test",
+            headers={"Authorization": f"Bearer {get_expected_token()}"}
+        )
+    
+    async def test_vault_requires_authentication(self):
+        """Vault endpoints reject requests without a valid bearer token."""
+        async with AsyncClient(app=app, base_url="http://test") as anonymous:
+            response = await anonymous.get("/api/v1/vault/stats")
+            assert response.status_code in (401, 403)
+        
+        async with AsyncClient(app=app, base_url="http://test",
+                               headers={"Authorization": "Bearer wrong"}) as wrong:
+            response = await wrong.get("/api/v1/vault/stats")
+            assert response.status_code == 401
     
     async def test_embed_endpoint(self, client):
         """Test /embed endpoint."""

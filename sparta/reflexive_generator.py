@@ -8,7 +8,7 @@ This module implements reflexive generation with verification, providing:
 - Honest uncertainty admission
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from loguru import logger
 from sparta.semantic_foundation import SemanticFoundation
 
@@ -262,7 +262,7 @@ class ReflexiveGenerator:
         logger.debug("✅ Honest UNKNOWN response generated")
         return result
     
-    def _logical_expansion(self, concepts: List[Dict]) -> tuple[List[str], str]:
+    def _logical_expansion(self, concepts: List[Dict]) -> Tuple[List[str], str]:
         """
         CRITICAL: This is NOT text generation!
         

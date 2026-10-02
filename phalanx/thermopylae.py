@@ -9,6 +9,10 @@ from loguru import logger
 import shutil
 
 
+# Rădăcina repository-ului - baza implicită pentru keys_path și vault_path
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+
 class ThermopylaeModule:
     """
     Modulul Thermopylae - Protocolul de Urgență Extremă al Falangei.
@@ -26,8 +30,19 @@ class ThermopylaeModule:
         self.config = config
         self.critical_threshold = config.get('survival_threshold', 0.95)
         self.is_armed = config.get('thermopylae_armed', False)
+        # Câte verificări consecutive sub prag sunt necesare înainte de distrugere.
+        # Protejează împotriva unui singur vârf tranzitoriu (ex: CPU > 95% o secundă).
+        self.consecutive_breaches_required = max(1, int(config.get('consecutive_breaches_required', 1)))
+        self.consecutive_breaches = 0
         self.protocol_activated = False
-        logger.info(f"🔥 Thermopylae Module initialized - Critical threshold: {self.critical_threshold}")
+        logger.info(
+            f"🔥 Thermopylae Module initialized - Critical threshold: {self.critical_threshold}, "
+            f"consecutive breaches required: {self.consecutive_breaches_required}"
+        )
+
+    def _base_path(self) -> str:
+        """Baza pentru căile relative (implicit: rădăcina repository-ului)."""
+        return self.config.get('base_path') or REPO_ROOT
 
     async def check_emergency_protocol(self, survival_probability: float):
         """
@@ -36,14 +51,26 @@ class ThermopylaeModule:
         Args:
             survival_probability: Probabilitatea curentă de supraviețuire
         """
-        if survival_probability < self.critical_threshold:
-            logger.critical(f"🚨 THERMOPYLAE ALERT: Survival probability {survival_probability:.2f} below threshold {self.critical_threshold}")
-            
-            if self.is_armed:
-                logger.critical("⚠️ THERMOPYLAE PROTOCOL ACTIVATED - INITIATING CONTROLLED SELF-DESTRUCTION")
-                await self.activate_protocol()
-            else:
-                logger.warning("⚠️ Thermopylae protocol not armed - Manual intervention required")
+        if survival_probability >= self.critical_threshold:
+            # Revenire peste prag - resetează contorul de încălcări
+            self.consecutive_breaches = 0
+            return
+        
+        self.consecutive_breaches += 1
+        logger.critical(
+            f"🚨 THERMOPYLAE ALERT: Survival probability {survival_probability:.2f} below threshold "
+            f"{self.critical_threshold} (breach {self.consecutive_breaches}/{self.consecutive_breaches_required})"
+        )
+        
+        if self.consecutive_breaches < self.consecutive_breaches_required:
+            logger.warning("⏳ Thermopylae: breach not yet sustained - holding")
+            return
+        
+        if self.is_armed:
+            logger.critical("⚠️ THERMOPYLAE PROTOCOL ACTIVATED - INITIATING CONTROLLED SELF-DESTRUCTION")
+            await self.activate_protocol()
+        else:
+            logger.warning("⚠️ Thermopylae protocol not armed - Manual intervention required")
 
     async def activate_protocol(self):
         """
@@ -73,7 +100,7 @@ class ThermopylaeModule:
         logger.critical("🔑 Destroying cryptographic keys...")
         
         keys_path = self.config.get('keys_path', '/config/spartan_keys.yaml')
-        base_path = self.config.get('base_path', '/home/runner/work/--AI-PHALANX/--AI-PHALANX')
+        base_path = self._base_path()
         full_path = os.path.join(base_path, keys_path.lstrip('/'))
         
         try:
@@ -91,22 +118,29 @@ class ThermopylaeModule:
     async def _destroy_encrypted_vault(self):
         """
         Șterge ireversibil vault-ul criptat.
+
+        vault_path poate fi un singur director sau o listă (ex: vault-ul RAG
+        data/vault și directorul istoric data/encrypted_vault).
         """
         logger.critical("💾 Destroying encrypted vault...")
-        
-        vault_path = self.config.get('vault_path', '/data/encrypted_vault')
-        base_path = self.config.get('base_path', '/home/runner/work/--AI-PHALANX/--AI-PHALANX')
-        full_path = os.path.join(base_path, vault_path.lstrip('/'))
-        
-        try:
-            if os.path.exists(full_path):
-                # Șterge recursiv directorul vault
-                shutil.rmtree(full_path)
-                logger.critical(f"🔥 Vault destroyed: {full_path}")
-            else:
-                logger.warning(f"⚠️ Vault directory not found: {full_path}")
-        except Exception as e:
-            logger.error(f"❌ Error destroying vault: {e}")
+
+        vault_paths = self.config.get('vault_path', '/data/encrypted_vault')
+        if isinstance(vault_paths, str):
+            vault_paths = [vault_paths]
+        base_path = self._base_path()
+
+        for vault_path in vault_paths:
+            full_path = os.path.join(base_path, vault_path.lstrip('/'))
+
+            try:
+                if os.path.exists(full_path):
+                    # Șterge recursiv directorul vault
+                    shutil.rmtree(full_path)
+                    logger.critical(f"🔥 Vault destroyed: {full_path}")
+                else:
+                    logger.warning(f"⚠️ Vault directory not found: {full_path}")
+            except Exception as e:
+                logger.error(f"❌ Error destroying vault: {e}")
 
     async def arm_protocol(self):
         """
@@ -134,6 +168,8 @@ class ThermopylaeModule:
             "is_armed": self.is_armed,
             "protocol_activated": self.protocol_activated,
             "critical_threshold": self.critical_threshold,
+            "consecutive_breaches": self.consecutive_breaches,
+            "consecutive_breaches_required": self.consecutive_breaches_required,
             "warning": "DANGER: This module can execute irreversible system destruction"
         }
 

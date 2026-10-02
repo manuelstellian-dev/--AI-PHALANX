@@ -47,7 +47,7 @@ class SpartanVectorStore:
     Features:
     - SentenceTransformer embeddings (all-MiniLM-L6-v2)
     - Cosine similarity search
-    - Persistent storage (pickle + JSON)
+    - Persistent storage (JSON with embeddings; legacy pickle read as fallback)
     - Batch processing
     - CRUD operations
     """
@@ -108,7 +108,8 @@ class SpartanVectorStore:
         embeddings = self.model.encode(texts, convert_to_numpy=True, show_progress_bar=True)
         return [emb for emb in embeddings]
     
-    def add_entry(self, id: str, text: str, metadata: Optional[Dict[str, Any]] = None) -> VectorEntry:
+    def add_entry(self, id: str, text: str, metadata: Optional[Dict[str, Any]] = None,
+                  stored_text: Optional[str] = None) -> VectorEntry:
         """
         Add a new entry to the vector store.
         
@@ -116,6 +117,8 @@ class SpartanVectorStore:
             id: Unique identifier for the entry
             text: Text content to embed
             metadata: Optional metadata dictionary
+            stored_text: Text kept in the index instead of `text` (e.g. a
+                redaction marker when the plaintext lives only encrypted)
             
         Returns:
             VectorEntry object
@@ -127,7 +130,7 @@ class SpartanVectorStore:
         
         entry = VectorEntry(
             id=id,
-            text=text,
+            text=text if stored_text is None else stored_text,
             embedding=embedding,
             metadata=metadata or {},
             created_at=datetime.now(timezone.utc).isoformat()
@@ -359,7 +362,11 @@ class SpartanVectorStore:
     
     def save_to_disk(self):
         """
-        Save the vector store to disk (pickle + JSON).
+        Save the vector store to disk.
+        
+        vector_store.json holds entries *with* embeddings and is the primary
+        format loaded back. vector_store.pkl is still written for backward
+        compatibility with older readers, but is only read as a fallback.
         """
         try:
             # Save as pickle (with embeddings)
@@ -367,19 +374,12 @@ class SpartanVectorStore:
             with open(pickle_path, 'wb') as f:
                 pickle.dump(self.entries, f)
             
-            # Save as JSON (without embeddings, for inspection)
+            # Save as JSON (with embeddings) - primary, safe-to-load format
             json_path = os.path.join(self.storage_path, 'vector_store.json')
             json_data = {
                 'model_name': self.model_name,
-                'entries': [
-                    {
-                        'id': entry.id,
-                        'text': entry.text,
-                        'metadata': entry.metadata,
-                        'created_at': entry.created_at
-                    }
-                    for entry in self.entries.values()
-                ]
+                'format_version': 2,
+                'entries': [entry.to_dict() for entry in self.entries.values()]
             }
             with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(json_data, f, indent=2, ensure_ascii=False)
@@ -392,8 +392,26 @@ class SpartanVectorStore:
     def _load_from_disk(self):
         """
         Load the vector store from disk.
+        
+        Prefers vector_store.json (no code execution on load). Falls back to the
+        legacy pickle only when no JSON with embeddings is available.
         """
+        json_path = os.path.join(self.storage_path, 'vector_store.json')
         pickle_path = os.path.join(self.storage_path, 'vector_store.pkl')
+        
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+                raw_entries = json_data.get('entries', [])
+                if all('embedding' in e for e in raw_entries):
+                    self.entries = {
+                        e['id']: VectorEntry.from_dict(dict(e)) for e in raw_entries
+                    }
+                    logger.info(f"📂 Loaded {len(self.entries)} entries from JSON")
+                    return
+            except Exception as e:
+                logger.warning(f"⚠️ Error loading JSON store, trying legacy pickle: {e}")
         
         if os.path.exists(pickle_path):
             try:

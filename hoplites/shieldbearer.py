@@ -38,8 +38,11 @@ class ShieldBearer:
             logger.info("🌐 Air-Gap disabled - network access allowed")
             return False
         
-        # Verifică conexiuni active
-        active_connections = await self._check_network_connections()
+        # Verifică conexiuni active (traficul loopback local nu încalcă Air-Gap-ul)
+        active_connections = [
+            conn for conn in await self._check_network_connections()
+            if self._is_external(conn)
+        ]
         
         if self.airgap_mode == 'strict':
             # În modul strict, nici o conexiune externă nu este permisă
@@ -51,14 +54,49 @@ class ShieldBearer:
         
         elif self.airgap_mode == 'permissive':
             # În modul permisiv, doar conexiunile permise sunt acceptate
-            unauthorized = [conn for conn in active_connections 
-                          if conn not in self.allowed_connections]
+            unauthorized = [conn for conn in active_connections
+                            if not self._is_allowed(conn)]
             if unauthorized:
                 logger.warning(f"⚠️ Unauthorized connections: {len(unauthorized)}")
                 return False
             return True
         
         return True
+
+    @staticmethod
+    def _remote_host(conn: Any) -> Any:
+        """Extrage host-ul remote dintr-o conexiune ('ip:port' sau dict)."""
+        remote = conn.get('remote') if isinstance(conn, dict) else conn
+        if not isinstance(remote, str):
+            return None
+        return remote.rsplit(':', 1)[0].strip('[]')
+
+    def _is_external(self, conn: Any) -> bool:
+        """
+        Verifică dacă o conexiune iese din mașină (non-loopback).
+        
+        Args:
+            conn: Conexiune ({'local': ..., 'remote': ...})
+            
+        Returns:
+            False pentru conexiuni fără remote sau către loopback
+        """
+        if isinstance(conn, dict) and 'remote' in conn and conn['remote'] is None:
+            return False
+        host = self._remote_host(conn)
+        if host is None:
+            return True
+        return not (host.startswith('127.') or host in ('::1', 'localhost'))
+
+    def _is_allowed(self, conn: Any) -> bool:
+        """
+        Verifică dacă o conexiune este în lista allowed_connections.
+        Acceptă intrări ca dict complet, 'ip:port' remote sau doar host remote.
+        """
+        if conn in self.allowed_connections:
+            return True
+        remote = conn.get('remote') if isinstance(conn, dict) else conn
+        return remote in self.allowed_connections or self._remote_host(conn) in self.allowed_connections
 
     async def _check_network_connections(self) -> list:
         """

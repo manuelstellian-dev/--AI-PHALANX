@@ -181,8 +181,16 @@ class WeaponMaster:
         else:
             domain = target
         
-        # Verifică dacă domeniul este în lista permisă
-        return any(allowed in domain for allowed in self.allowed_domains)
+        # Normalizează (fără port, fără majuscule)
+        domain = domain.split(':')[0].lower().rstrip('.')
+        
+        # Potrivire exactă sau subdomeniu real (api.example.com pentru example.com).
+        # O potrivire pe subșir ar accepta evil-example.com sau example.com.evil.io.
+        for allowed in self.allowed_domains:
+            allowed = allowed.lower().strip('.')
+            if domain == allowed or domain.endswith('.' + allowed):
+                return True
+        return False
 
     async def enable_external_access(self):
         """

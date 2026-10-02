@@ -4,6 +4,7 @@ Expune metrici Prometheus pentru monitorizare
 """
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import PlainTextResponse
 from typing import Dict, Any
 from loguru import logger
 import api.server as server
@@ -85,7 +86,7 @@ async def get_metrics() -> Dict[str, Any]:
     return metrics
 
 
-@router.get("/metrics")
+@router.get("/metrics", response_class=PlainTextResponse)
 async def get_prometheus_metrics(token: str = Depends(server.verify_token)) -> str:
     """
     Returnează metrici în format Prometheus (necesită autentificare).
@@ -126,7 +127,8 @@ async def get_prometheus_metrics(token: str = Depends(server.verify_token)) -> s
     prometheus_output.append("# TYPE leonidas_messages_sent counter")
     prometheus_output.append(f"leonidas_messages_sent {metrics.get('messages_sent', 0)}")
     
-    return "\n".join(prometheus_output)
+    # Expoziția Prometheus cere text simplu terminat cu newline
+    return "\n".join(prometheus_output) + "\n"
 
 
 @router.get("/metrics/json")

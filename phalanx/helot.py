@@ -3,6 +3,7 @@ Helot Module - Monitorizarea Resurselor Fizice
 Responsabil cu monitorizarea CPU, RAM, GPU, NPU și calcularea probabilității de supraviețuire
 """
 
+import asyncio
 import psutil
 from typing import Dict, Any
 from loguru import logger
@@ -23,6 +24,7 @@ class HelotModule:
         """
         self.config = config
         self.survival_probability = 1.0
+        self.last_resources: Dict[str, Any] = {}
         self.resource_thresholds = config.get('resource_thresholds', {
             'cpu_critical': 95.0,
             'memory_critical': 90.0,
@@ -37,7 +39,8 @@ class HelotModule:
         Returns:
             Dicționar cu statistici despre resurse
         """
-        cpu_percent = psutil.cpu_percent(interval=0.1)
+        # Eșantionarea CPU durează 0.1s - rulează în thread ca să nu blocheze bucla async
+        cpu_percent = await asyncio.to_thread(psutil.cpu_percent, interval=0.1)
         cpu_count = psutil.cpu_count()
         
         resources = {
@@ -54,6 +57,9 @@ class HelotModule:
         
         # Calculează probabilitatea de supraviețuire
         self.survival_probability = self._calculate_survival_probability(resources)
+        
+        # Păstrează ultima citire pentru Λ-Core (factorul P în Λ-TAS)
+        self.last_resources = resources
         
         return resources
     

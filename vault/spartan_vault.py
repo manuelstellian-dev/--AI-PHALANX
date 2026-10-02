@@ -12,12 +12,18 @@ from cryptography.fernet import Fernet
 from .vector_store import SpartanVectorStore
 
 
+# Marker kept in the semantic index in place of plaintext for encrypted entries
+REDACTED_TEXT = "[ENCRYPTED]"
+
+
 class SpartanVault:
     """
     SPARTAN VAULT - Encrypted Storage with RAG Vectorial
     
     Features:
-    - AES-256 encryption for sensitive data
+    - Fernet authenticated encryption (AES-128-CBC + HMAC-SHA256) for sensitive data
+    - Encrypted entries are indexed by embedding only; plaintext is not kept
+      in the index unless `index_plaintext=True`
     - Vector embeddings for semantic search
     - Hybrid search (exact + semantic)
     - Persistent storage
@@ -25,21 +31,28 @@ class SpartanVault:
     
     def __init__(self, encryption_key: Optional[bytes] = None, 
                  storage_path: str = './data/vault',
-                 vector_model: str = 'all-MiniLM-L6-v2'):
+                 vector_model: str = 'all-MiniLM-L6-v2',
+                 index_plaintext: bool = False):
         """
         Initialize the Spartan Vault.
         
         Args:
-            encryption_key: Fernet encryption key (generated if None)
+            encryption_key: Fernet encryption key. If None it is resolved from
+                SPARTA_VAULT_KEY, then from <storage_path>/encryption.key, and
+                only generated when neither exists (so saved data stays readable
+                across restarts)
             storage_path: Path for persistent storage
             vector_model: SentenceTransformer model name
+            index_plaintext: Keep plaintext of encrypted entries in the semantic
+                index (legacy behaviour). Default False: index holds REDACTED_TEXT
         """
         self.storage_path = storage_path
+        self.index_plaintext = index_plaintext
         os.makedirs(storage_path, exist_ok=True)
         
         # Initialize encryption
         if encryption_key is None:
-            encryption_key = Fernet.generate_key()
+            encryption_key = self._resolve_encryption_key()
         self.cipher = Fernet(encryption_key)
         self.encryption_key = encryption_key
         
@@ -57,6 +70,29 @@ class SpartanVault:
         
         # Load existing encrypted data
         self._load_encrypted_data()
+    
+    def _resolve_encryption_key(self) -> bytes:
+        """
+        Resolve the vault key: environment > persisted key file > new key.
+        
+        Returns:
+            Fernet key bytes
+        """
+        env_key = os.getenv('SPARTA_VAULT_KEY')
+        if env_key:
+            logger.info("🔑 Vault key loaded from SPARTA_VAULT_KEY")
+            return env_key.encode('utf-8')
+        
+        key_path = os.path.join(self.storage_path, 'encryption.key')
+        if os.path.exists(key_path):
+            with open(key_path, 'rb') as f:
+                key = f.read().strip()
+            if key:
+                logger.info(f"🔑 Vault key loaded from {key_path}")
+                return key
+        
+        logger.warning("⚠️ No vault key found - generating a new one (persisted on save)")
+        return Fernet.generate_key()
     
     def store(self, id: str, data: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -125,8 +161,10 @@ class SpartanVault:
             encrypted = self.cipher.encrypt(text.encode('utf-8'))
             self.encrypted_storage[id] = encrypted
         
-        # Add to vector store for semantic search
-        entry = self.vector_store.add_entry(id, text, metadata)
+        # Add to vector store for semantic search. The embedding is computed from
+        # the plaintext, but encrypted entries keep only a marker in the index.
+        stored_text = REDACTED_TEXT if (encrypt and not self.index_plaintext) else None
+        entry = self.vector_store.add_entry(id, text, metadata, stored_text=stored_text)
         
         result = {
             'id': id,
@@ -325,10 +363,14 @@ class SpartanVault:
         with open(encrypted_path, 'w') as f:
             json.dump(encrypted_data, f, indent=2)
         
-        # Save encryption key
-        key_path = os.path.join(self.storage_path, 'encryption.key')
-        with open(key_path, 'wb') as f:
-            f.write(self.encryption_key)
+        # Save encryption key (owner-only permissions) unless supplied by environment.
+        # NOTE: a key stored beside the ciphertext protects against index leaks,
+        # not against full-disk compromise - see BACKLOG.md (key management).
+        if not os.getenv('SPARTA_VAULT_KEY'):
+            key_path = os.path.join(self.storage_path, 'encryption.key')
+            with open(key_path, 'wb') as f:
+                f.write(self.encryption_key)
+            os.chmod(key_path, 0o600)
         
         logger.info(f"💾 Saved vault to disk: {self.storage_path}")
     

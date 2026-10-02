@@ -77,9 +77,15 @@ phalanx:
   thermopylae:
     survival_threshold: 0.95  # Prag critic pentru activare
     thermopylae_armed: false  # PERICOL: Setează pe true pentru auto-distrugere activă
-    keys_path: "/config/spartan_keys.yaml"
-    vault_path: "/data/encrypted_vault"
-    base_path: "/home/runner/work/--AI-PHALANX/--AI-PHALANX"
+    # Verificări consecutive sub prag înainte de activare (un singur vârf de CPU
+    # scade supraviețuirea la 0.90 < 0.95 - fără acest prag ar declanșa imediat)
+    consecutive_breaches_required: 3
+    keys_path: "/config/spartan_keys.yaml"   # citit și de Spartan Guard (cheia master)
+    # Vault-ul RAG (vault.storage_path) + directorul istoric criptat
+    vault_path:
+      - "/data/vault"
+      - "/data/encrypted_vault"
+    base_path: ""  # gol = rădăcina repository-ului
 
 # Configurare Hoplites (Module de Acțiune)
 hoplites:
@@ -115,6 +121,18 @@ hoplites:
     encrypt_by_default: true
     message_retention_hours: 168  # 7 zile
     queue_max_size: 1000
+
+# Configurare Control (Kronos-Arbiter, Λ-Möbius, Fractal Flux Pipeline)
+control:
+  ffp:
+    enabled: true  # Pornește ciclul Scan → Detect → Quarantine → Heal → Improve → Reinvest
+
+# Configurare Spartan Vault (RAG Vectorial)
+vault:
+  storage_path: "data/vault"  # relativ la rădăcina repository-ului; distrus de Thermopylae
+  # false = intrările criptate apar în index doar ca "[ENCRYPTED]" (recomandat)
+  index_plaintext: false
+  # Cheia vault-ului: SPARTA_VAULT_KEY (mediu) sau <storage_path>/encryption.key
 
 # Configurare API Server
 api:

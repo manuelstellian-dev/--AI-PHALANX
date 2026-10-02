@@ -88,11 +88,14 @@ class CommandProcessor:
             elif cmd_type == "train_agoge":
                 return await self._handle_agoge_training(payload)
             
+            elif cmd_type == "sparta_query":
+                return await self._handle_sparta_query(payload)
+            
             else:
                 return {
                     "success": False,
                     "error": f"Unknown command type: {cmd_type}",
-                    "suggestion": "Available commands: status, analyze_risk, encrypt_data, check_airgap, send_message, train_agoge"
+                    "suggestion": "Available commands: status, analyze_risk, encrypt_data, check_airgap, send_message, train_agoge, sparta_query"
                 }
         
         except Exception as e:
@@ -174,6 +177,18 @@ class CommandProcessor:
         result = await agoge.run_training_cycle(payload)
         self.adaptation_factor = result.get('adaptation_factor', 1.0)
         return {"success": True, "result": result}
+
+    async def _handle_sparta_query(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Răspunde la o întrebare prin SPARTA (raționament verificat, anti-halucinație)."""
+        sparta = self.modules.get('sparta')
+        if sparta is None:
+            return {"success": False, "error": "SPARTA runtime not available"}
+        
+        query = payload.get("query", "")
+        if not query:
+            return {"success": False, "error": "Missing 'query' in payload"}
+        
+        return {"success": True, "result": sparta.query(query)}
 
     def set_adaptation_factor(self, factor: float):
         """

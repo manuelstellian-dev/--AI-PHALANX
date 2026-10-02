@@ -29,6 +29,8 @@ class LeondasBrain:
         self.lambda_tas = 1.0  # Timpul Autonom Spartan (factor de ritm)
         self.is_running = False
         self.modules = {}
+        # Setat de api.server.initialize_system - sursa factorului U (Λ-Möbius)
+        self.command_processor = None
         
         # Initialize FFP Pipeline
         self.ffp = FractalFluxPipeline(self)
@@ -86,6 +88,27 @@ class LeondasBrain:
         
         return lambda_tas
 
+    def _current_parallelism(self) -> float:
+        """
+        Factorul de Paralelism (P) curent: măsurat de Helot dacă există o citire,
+        altfel numărul de core-uri din configurație.
+        """
+        helot = self.modules.get('phalanx', {}).get('helot')
+        last_resources = getattr(helot, 'last_resources', None)
+        if isinstance(last_resources, dict) and 'parallelism_factor' in last_resources:
+            return float(last_resources['parallelism_factor'])
+        return self.config.get('hardware', {}).get('cpu_cores', 4)
+
+    def _current_workload(self) -> float:
+        """
+        Factorul de Expansiune (U) curent: calculat de CommandProcessor dacă este
+        conectat, altfel valoarea 'current_workload' din configurație.
+        """
+        processor = self.command_processor
+        if processor is not None and hasattr(processor, 'calculate_universe_expansion_factor'):
+            return processor.calculate_universe_expansion_factor()
+        return self.config.get('current_workload', 0.5)
+
     async def initialize_phalanx(self, phalanx_modules: Dict[str, Any]):
         """
         Inițializează modulele Phalanx (Helot, Agoge, Krypteia, Thermopylae).
@@ -120,20 +143,22 @@ class LeondasBrain:
                 if 'phalanx' in self.modules and 'helot' in self.modules['phalanx']:
                     survival_prob = await self.modules['phalanx']['helot'].get_survival_probability()
                     
-                    # Verifică protocolul Thermopylae
-                    if survival_prob < 0.95:
+                    # Verifică protocolul Thermopylae (pragul vine din configurația Thermopylae)
+                    thermopylae = self.modules['phalanx'].get('thermopylae')
+                    threshold = getattr(thermopylae, 'critical_threshold', 0.95)
+                    if survival_prob < threshold:
                         logger.warning(f"⚠️ Survival probability critical: {survival_prob:.2f}")
-                        if 'thermopylae' in self.modules['phalanx']:
-                            await self.modules['phalanx']['thermopylae'].check_emergency_protocol(survival_prob)
+                        if thermopylae is not None:
+                            await thermopylae.check_emergency_protocol(survival_prob)
                 
-                # Actualizează Λ-TAS
+                # Actualizează Λ-TAS cu P (Helot) și U (CommandProcessor)
                 self.lambda_tas = self.calculate_lambda_tas(
-                    parallelism=self.config.get('hardware', {}).get('cpu_cores', 4),
-                    workload=self.config.get('current_workload', 0.5)
+                    parallelism=self._current_parallelism(),
+                    workload=self._current_workload()
                 )
                 
-                # Pauză între iterații (ajustată de Λ-TAS)
-                await asyncio.sleep(1.0 / self.lambda_tas)
+                # Pauză între iterații: Λ-TAS este perioada în secunde (T_new)
+                await asyncio.sleep(self.lambda_tas)
                 
             except Exception as e:
                 logger.error(f"❌ Error in homeostasis loop: {e}")

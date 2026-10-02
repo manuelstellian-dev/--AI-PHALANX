@@ -41,8 +41,10 @@ class SemanticFoundation:
         Load concepts from semantic memory JSONL file.
         
         Each line in the file should be a valid JSON object representing
-        a concept with required fields: id, domain, definition, confidence,
-        source, relations, created_at, verified_by.
+        a concept with the 16 required fields: id, domain, subdomain, topic,
+        definition, formal_statement, relations, prerequisites, confidence,
+        source, reflex_tag, examples, counterexamples, applications,
+        verification, uncertainty. Lines missing any field are skipped.
         
         Args:
             filepath: Path to the JSONL file containing concepts
@@ -393,6 +395,56 @@ class SemanticFoundation:
                 'relation_count': len(related),
                 'domain_peer_count': len(domain_peers)
             }
+        }
+    
+    def find_dangling_references(self) -> Dict[str, Dict[str, List[str]]]:
+        """
+        Find relations and prerequisites that point to concepts not present
+        in the foundation (graph integrity check).
+        
+        Returns:
+            Mapping concept_id -> {'relations': [...], 'prerequisites': [...]}
+            containing only concepts with at least one missing reference
+        """
+        dangling: Dict[str, Dict[str, List[str]]] = {}
+        
+        for concept_id, concept in self.concepts.items():
+            missing_relations = [r for r in concept.get('relations', []) if r not in self.concepts]
+            missing_prereqs = [p for p in concept.get('prerequisites', []) if p not in self.concepts]
+            if missing_relations or missing_prereqs:
+                dangling[concept_id] = {
+                    'relations': missing_relations,
+                    'prerequisites': missing_prereqs
+                }
+        
+        return dangling
+    
+    def get_integrity_report(self) -> Dict[str, Any]:
+        """
+        Summarize knowledge-graph integrity.
+        
+        Returns:
+            Dictionary with dangling-reference counts, the most frequently
+            referenced missing concepts, and confidence spread
+        """
+        dangling = self.find_dangling_references()
+        missing_counts: Dict[str, int] = {}
+        for refs in dangling.values():
+            for target in refs['relations'] + refs['prerequisites']:
+                missing_counts[target] = missing_counts.get(target, 0) + 1
+        
+        confidences = [c['confidence'] for c in self.concepts.values()]
+        
+        return {
+            'total_concepts': len(self.concepts),
+            'concepts_with_dangling_references': len(dangling),
+            'dangling_reference_count': sum(missing_counts.values()),
+            'distinct_missing_concepts': len(missing_counts),
+            'most_referenced_missing': sorted(
+                missing_counts.items(), key=lambda kv: (-kv[1], kv[0])
+            )[:20],
+            'confidence_range': [min(confidences), max(confidences)] if confidences else [0.0, 0.0],
+            'healthy': not dangling
         }
     
     def get_statistics(self) -> Dict[str, Any]:
