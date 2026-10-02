@@ -73,9 +73,9 @@ def _count_ext(root: str, ext: str) -> int:
 
 
 def _settings_leaf_keys(root: str) -> int:
-    import yaml
+    from polis import yamlite
     with open(os.path.join(root, 'config', 'settings.yaml'), encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
+        cfg = yamlite.safe_load(f)
 
     def leaves(d):
         return sum(leaves(v) if isinstance(v, dict) else 1 for v in d.values())

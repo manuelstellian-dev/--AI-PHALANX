@@ -322,3 +322,54 @@ change.
 | CD-4 | SPARTA answer confidence becomes the Fréchet lower bound max(0, 1 − Σ(1 − cᵢ)), instead of min cᵢ (an upper bound) | approval of the behaviour change |
 | CD-5 | Λ-Zero signs: Λ₀ = tanh(k₁ℓ − k₂χ + k₃\|θ̇\|), with k₂ > 0.549 | k₂ |
 | CD-6 | API perimeter: refuse the default token in strict mode, CORS origins, token expiry | approval of the behaviour change |
+
+## Absolute sovereignty (2026-10-02)
+
+### DEC-022 · The sovereignty boundary: Python and its standard library are the substrate
+- **status:** accepted
+- **date:** 2026-10-02
+- **cites:** INT-004, LAW-015, LAW-005
+- **evidence:** polis/__init__.py
+
+**Context.** The Commander's addendum makes explicit: no external APIs, no external models, no
+external libraries ("no pip install"). Everything must be built from first principles.
+
+**Commander rulings (2026-10-02)**, recorded verbatim as the options chosen:
+1. *Boundary:* "Python + stdlib = substrate". The interpreter and the standard library are
+   allowed; every package in requirements.txt is replaced by our own code. requirements.txt
+   becomes empty.
+2. *Cryptography:* "Own AES-256-GCM". Implemented from FIPS-197 and NIST SP 800-38D and
+   verified against official NIST test vectors. The vault migrates from Fernet to the same
+   AES-GCM. Documented residual risk: timing side channels in an interpreted implementation,
+   mitigated by the air-gap and single-tenant threat model.
+3. *Dev tools:* "Yes, tools too". The test runner, the in-process HTTP test client, the linter
+   and coverage are all ours. Nothing is pip-installed, ever.
+
+**Decision.** Build `polis/`, the foundation of the city-state. During the migration, the
+outgoing libraries serve only as independent oracles for differential verification. That covers
+YAML parsing, sensing, AES-GCM bytes and SVD. The verified behaviour is then pinned by embedded
+test vectors.
+
+**Consequences.**
+- Λ-Logos must run on pure-Python linear algebra, with speed and quality re-measured.
+- Deployment drops `apt-get` and curl (the health check uses the stdlib).
+- External observability services (Prometheus, Grafana, Redis, Postgres) move to an explicitly
+  optional compose file. The `/metrics` endpoint itself, which we own, stays (LAW-001).
+
+### DEC-023 · Embedding backends are registered, never imported: capability kept, dependency removed
+- **status:** accepted
+- **date:** 2026-10-02
+- **cites:** LAW-015, LAW-001, DEC-022
+- **refines:** DEC-012
+- **evidence:** vault/vector_store.py, tests/test_logos.py::test_external_backend_still_available_as_opt_in
+
+**Context.** DEC-012 kept the external `sentence-transformers` backend as a lazy opt-in. Under
+LAW-015 even a lazy `import` of an external library is a dependency, and `test_no_third_party_imports`
+flagged it.
+
+**Decision.** `vault.vector_store.register_backend(name, factory)` replaces the hard-coded import.
+Λ-Logos is built in. Any other encoder must be supplied explicitly by the operator. Our code imports
+none, and an unregistered model name is refused.
+
+**Why not delete it.** The capability, "plug in another encoder", is preserved under LAW-001. Only
+the external dependency is removed under LAW-015.

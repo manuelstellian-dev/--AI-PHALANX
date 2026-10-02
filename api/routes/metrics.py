@@ -6,7 +6,7 @@ Expune metrici Prometheus pentru monitorizare
 from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 import api.server as server
 import time
 

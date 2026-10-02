@@ -5,7 +5,7 @@ Execută auto-distrugerea controlată dacă probabilitatea de supraviețuire est
 
 import os
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 import shutil
 
 

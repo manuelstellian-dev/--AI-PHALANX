@@ -1208,13 +1208,13 @@ class TestShieldBearerAdditionalCoverage:
     @pytest.mark.asyncio
     async def test_airgap_unknown_mode(self, monkeypatch):
         """Test Air-Gap with unknown/invalid mode."""
-        import psutil
+        from polis import sysinfo
         
         # Mock no connections
         def mock_net_connections(*args, **kwargs):
             return []
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {'airgap_mode': 'unknown_mode'}
         shield = ShieldBearer(config)
@@ -1251,13 +1251,13 @@ class TestShieldBearerAdditionalCoverage:
     @pytest.mark.asyncio
     async def test_check_network_connections_import_error(self, monkeypatch):
         """Test network connections check when psutil ImportError occurs."""
-        import psutil
+        from polis import sysinfo
         
-        # Mock psutil.net_connections to raise ImportError
+        # Mock sysinfo.net_connections to raise ImportError
         def mock_net_connections(*args, **kwargs):
             raise ImportError("psutil not available")
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {}
         shield = ShieldBearer(config)
@@ -1271,13 +1271,13 @@ class TestShieldBearerAdditionalCoverage:
     @pytest.mark.asyncio
     async def test_airgap_strict_no_connections(self, monkeypatch):
         """Test strict Air-Gap mode with no connections."""
-        import psutil
+        from polis import sysinfo
         
         # Mock no connections
         def mock_net_connections(*args, **kwargs):
             return []
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {'airgap_mode': 'strict'}
         shield = ShieldBearer(config)
@@ -1290,7 +1290,7 @@ class TestShieldBearerAdditionalCoverage:
     @pytest.mark.asyncio
     async def test_airgap_permissive_authorized_connections(self, monkeypatch):
         """Test permissive Air-Gap mode with authorized connections."""
-        import psutil
+        from polis import sysinfo
         
         # Mock authorized connection
         class MockConnection:
@@ -1307,7 +1307,7 @@ class TestShieldBearerAdditionalCoverage:
         def mock_net_connections(*args, **kwargs):
             return [MockConnection()]
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {
             'airgap_mode': 'permissive',
@@ -1346,14 +1346,14 @@ class TestShieldBearerPsutilExceptions:
     
     @pytest.mark.asyncio
     async def test_check_network_connections_psutil_access_denied(self, monkeypatch):
-        """Test network connections check with psutil.AccessDenied."""
-        import psutil
+        """Test network connections check with sysinfo.AccessDenied."""
+        from polis import sysinfo
         
-        # Mock psutil.net_connections to raise AccessDenied
+        # Mock sysinfo.net_connections to raise AccessDenied
         def mock_net_connections(*args, **kwargs):
-            raise psutil.AccessDenied("Access denied to network connections")
+            raise sysinfo.AccessDenied("Access denied to network connections")
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {}
         shield = ShieldBearer(config)
@@ -1365,14 +1365,14 @@ class TestShieldBearerPsutilExceptions:
     
     @pytest.mark.asyncio
     async def test_check_network_connections_psutil_no_such_process(self, monkeypatch):
-        """Test network connections check with psutil.NoSuchProcess."""
-        import psutil
+        """Test network connections check with sysinfo.NoSuchProcess."""
+        from polis import sysinfo
         
-        # Mock psutil.net_connections to raise NoSuchProcess
+        # Mock sysinfo.net_connections to raise NoSuchProcess
         def mock_net_connections(*args, **kwargs):
-            raise psutil.NoSuchProcess(pid=12345, name="test")
+            raise sysinfo.NoSuchProcess(pid=12345, name="test")
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {}
         shield = ShieldBearer(config)
@@ -1384,14 +1384,14 @@ class TestShieldBearerPsutilExceptions:
     
     @pytest.mark.asyncio
     async def test_check_network_connections_psutil_timeout_expired(self, monkeypatch):
-        """Test network connections check with psutil.TimeoutExpired."""
-        import psutil
+        """Test network connections check with sysinfo.TimeoutExpired."""
+        from polis import sysinfo
         
-        # Mock psutil.net_connections to raise TimeoutExpired
+        # Mock sysinfo.net_connections to raise TimeoutExpired
         def mock_net_connections(*args, **kwargs):
-            raise psutil.TimeoutExpired(seconds=5)
+            raise sysinfo.TimeoutExpired(seconds=5)
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {}
         shield = ShieldBearer(config)
@@ -1403,14 +1403,14 @@ class TestShieldBearerPsutilExceptions:
     
     @pytest.mark.asyncio
     async def test_check_network_connections_psutil_zombie_process(self, monkeypatch):
-        """Test network connections check with psutil.ZombieProcess."""
-        import psutil
+        """Test network connections check with sysinfo.ZombieProcess."""
+        from polis import sysinfo
         
-        # Mock psutil.net_connections to raise ZombieProcess
+        # Mock sysinfo.net_connections to raise ZombieProcess
         def mock_net_connections(*args, **kwargs):
-            raise psutil.ZombieProcess(pid=12345, name="test")
+            raise sysinfo.ZombieProcess(pid=12345, name="test")
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {}
         shield = ShieldBearer(config)
@@ -1423,13 +1423,13 @@ class TestShieldBearerPsutilExceptions:
     @pytest.mark.asyncio
     async def test_check_network_connections_generic_exception(self, monkeypatch):
         """Test network connections check with generic exception."""
-        import psutil
+        from polis import sysinfo
         
-        # Mock psutil.net_connections to raise generic exception
+        # Mock sysinfo.net_connections to raise generic exception
         def mock_net_connections(*args, **kwargs):
             raise RuntimeError("Generic error")
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {}
         shield = ShieldBearer(config)
@@ -1442,7 +1442,7 @@ class TestShieldBearerPsutilExceptions:
     @pytest.mark.asyncio
     async def test_airgap_strict_mode_with_active_connections(self, monkeypatch):
         """Test strict Air-Gap mode detecting active connections."""
-        import psutil
+        from polis import sysinfo
         
         # Mock active connections
         class MockConnection:
@@ -1454,7 +1454,7 @@ class TestShieldBearerPsutilExceptions:
         def mock_net_connections(*args, **kwargs):
             return [MockConnection()]
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {'airgap_mode': 'strict'}
         shield = ShieldBearer(config)
@@ -1467,7 +1467,7 @@ class TestShieldBearerPsutilExceptions:
     @pytest.mark.asyncio
     async def test_airgap_permissive_mode_unauthorized_connections(self, monkeypatch):
         """Test permissive Air-Gap mode with unauthorized connections."""
-        import psutil
+        from polis import sysinfo
         
         # Mock unauthorized connection
         class MockConnection:
@@ -1479,7 +1479,7 @@ class TestShieldBearerPsutilExceptions:
         def mock_net_connections(*args, **kwargs):
             return [MockConnection()]
         
-        monkeypatch.setattr(psutil, 'net_connections', mock_net_connections)
+        monkeypatch.setattr(sysinfo, 'net_connections', mock_net_connections)
         
         config = {
             'airgap_mode': 'permissive',

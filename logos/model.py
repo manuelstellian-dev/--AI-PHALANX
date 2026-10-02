@@ -25,7 +25,7 @@ import os
 from typing import Dict, Iterable, List, Optional, Sequence
 
 import numpy as np
-from loguru import logger
+from polis.log import logger
 from scipy import sparse
 
 from logos.tokenizer import hashed_features

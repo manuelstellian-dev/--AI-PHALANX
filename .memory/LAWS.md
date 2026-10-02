@@ -67,6 +67,20 @@ call no remote model API. `requirements.txt` declares none (measure `deps.extern
 STATE-004). The embedding model is Λ-Logos (DEC-012). External backends exist only as explicit,
 non-default opt-ins, preserved under LAW-001.
 
+### LAW-015 · Absolute sovereignty of code: no external libraries
+- **status:** active
+- **cites:** INT-004, LAW-006
+- **enforced_by:** tests/test_polis.py::test_no_third_party_imports, requirements.txt
+
+The system depends on no external API, no external model and **no external library**. The
+substrate is the Python interpreter plus its standard library, like the CPU and the OS. Every other
+line is ours, in `polis/` and the system packages. The ruling and its scope are DEC-022:
+- dev tools are included;
+- cryptography is our own AES-256-GCM.
+
+`requirements.txt` declares nothing. Proof: the suite passes in an environment with nothing
+installed.
+
 ## Spartan laws (system behaviour)
 
 ### LAW-007 · SPARTA never invents

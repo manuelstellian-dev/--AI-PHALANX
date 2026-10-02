@@ -59,7 +59,7 @@ def save_keys_to_file(keys: dict, output_path: str):
         keys: Dicționar cu cheile de salvat
         output_path: Calea către fișierul de output
     """
-    import yaml
+    from polis import yamlite
     
     # Adaugă metadata
     keys['generated_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -67,7 +67,7 @@ def save_keys_to_file(keys: dict, output_path: str):
     keys['warning'] = "KEEP THIS FILE SECRET - DO NOT COMMIT TO VERSION CONTROL"
     
     with open(output_path, 'w') as f:
-        yaml.dump(keys, f, default_flow_style=False, sort_keys=False)
+        yamlite.dump(keys, f, default_flow_style=False, sort_keys=False)
     
     # Setează permisiuni restrictive (doar owner poate citi/scrie)
     os.chmod(output_path, 0o600)

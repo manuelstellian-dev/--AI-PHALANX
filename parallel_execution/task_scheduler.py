@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Set, Optional, Any, Callable
 from collections import defaultdict, deque
 from enum import Enum
-from loguru import logger
+from polis.log import logger
 
 
 class TaskStatus(str, Enum):

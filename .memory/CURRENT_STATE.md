@@ -22,8 +22,8 @@
 ### STATE-002 · Quality gates
 - **status:** active
 - **cites:** LAW-002, LAW-013, MAP-015
-- **measure:** tests.functions = 609
-- **measure:** tests.modules = 16
+- **measure:** tests.functions = 627
+- **measure:** tests.modules = 17
 
 Test functions are counted statically. pytest collects more tests than that, because
 parametrized cases are counted separately. That count and the lint, ShellCheck and coverage
@@ -47,7 +47,7 @@ Hallucination detection is lexical (EXT-010). The integrity report is available 
 - **status:** active
 - **cites:** LAW-006, DEC-012, MAP-008
 - **measure:** deps.external_ml_runtime = none
-- **measure:** deps.requirements = 17
+- **measure:** deps.requirements = 11
 
 The current artifact is `logos-v1:7ace9ee49387`, retrained under PRO-006 once `.memory/` joined
 the corpus. It has 1,948 corpus documents and 384 latent axes. On the fixed benchmark (28
@@ -72,11 +72,11 @@ is the floor that the next model version must beat (EXT-027).
 ### STATE-005 · Repository composition
 - **status:** active
 - **cites:** LAW-012, MAP-019
-- **measure:** repo.files = 135
-- **measure:** repo.python_files = 73
+- **measure:** repo.files = 141
+- **measure:** repo.python_files = 79
 - **measure:** repo.markdown_files = 45
 - **measure:** repo.shell_scripts = 3
-- **measure:** repo.packages = api,control,core,hoplites,logos,mnemosyne,parallel_execution,phalanx,sparta,vault
+- **measure:** repo.packages = api,control,core,hoplites,logos,mnemosyne,parallel_execution,phalanx,polis,sparta,vault
 - **measure:** config.settings_leaf_keys = 89
 
 Every file is mapped in ATLAS (rule M08). The repository contains no Rust, C/C++ or JSON

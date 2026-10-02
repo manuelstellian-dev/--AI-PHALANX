@@ -19,7 +19,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sparta import SemanticFoundation, FoundationBridge, ReflexiveGenerator  # noqa: E402
-from loguru import logger  # noqa: E402
+from polis.log import logger  # noqa: E402
 
 # Configure logger
 logger.remove()

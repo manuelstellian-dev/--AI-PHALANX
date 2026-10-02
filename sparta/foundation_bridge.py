@@ -10,7 +10,7 @@ LLM systems (LeondasBrain), enabling:
 """
 
 from typing import Dict, List, Optional, Any
-from loguru import logger
+from polis.log import logger
 from sparta.semantic_foundation import SemanticFoundation
 
 

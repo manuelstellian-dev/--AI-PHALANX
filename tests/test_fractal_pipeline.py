@@ -507,7 +507,7 @@ class TestFractalFluxPipeline:
         
         # Mock logger.info to raise exception
         import unittest.mock as mock
-        from loguru import logger
+        from polis.log import logger
         
         # Create anomalies that will trigger healing
         anomalies = [

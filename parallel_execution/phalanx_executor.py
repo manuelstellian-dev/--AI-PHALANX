@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Any, Dict, Optional, Tuple
 import multiprocessing
 import time
-from loguru import logger
+from polis.log import logger
 
 # Fix for Python 3.12+ multiprocessing fork deprecation warning
 # Set spawn method to avoid fork() deadlocks in multi-threaded environments

@@ -11,7 +11,7 @@ import os
 import tempfile
 
 import pytest
-import yaml
+from polis import yamlite
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from httpx import AsyncClient
@@ -39,7 +39,7 @@ from sparta import SemanticFoundation, get_runtime
 
 def _settings() -> dict:
     with open(os.path.join(REPO_ROOT, 'config', 'settings.yaml'), encoding='utf-8') as f:
-        return yaml.safe_load(f)
+        return yamlite.safe_load(f)
 
 
 # ============================================================================
@@ -125,14 +125,14 @@ class TestMasterKeyLoading:
         key_hex = 'ab' * 32
         with tempfile.TemporaryDirectory() as tmp:
             with open(os.path.join(tmp, 'keys.yaml'), 'w') as f:
-                yaml.safe_dump({'MASTER_AES_KEY_HEX': key_hex}, f)
+                yamlite.safe_dump({'MASTER_AES_KEY_HEX': key_hex}, f)
             assert load_master_key_hex(self._cfg(tmp)) == key_hex
 
     def test_ignores_template_placeholder_and_missing_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             assert load_master_key_hex(self._cfg(tmp)) is None
             with open(os.path.join(tmp, 'keys.yaml'), 'w') as f:
-                yaml.safe_dump({'MASTER_AES_KEY_HEX': 'REPLACE_WITH_GENERATED_KEY'}, f)
+                yamlite.safe_dump({'MASTER_AES_KEY_HEX': 'REPLACE_WITH_GENERATED_KEY'}, f)
             assert load_master_key_hex(self._cfg(tmp)) is None
 
     @pytest.mark.asyncio
@@ -140,7 +140,7 @@ class TestMasterKeyLoading:
         key_hex = 'cd' * 32
         with tempfile.TemporaryDirectory() as tmp:
             with open(os.path.join(tmp, 'keys.yaml'), 'w') as f:
-                yaml.safe_dump({'MASTER_AES_KEY_HEX': key_hex}, f)
+                yamlite.safe_dump({'MASTER_AES_KEY_HEX': key_hex}, f)
             cfg = self._cfg(tmp)
             cfg['hardware'] = {'cpu_cores': 2}
 

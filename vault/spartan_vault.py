@@ -7,7 +7,7 @@ import os
 import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
-from loguru import logger
+from polis.log import logger
 from cryptography.fernet import Fernet
 from .vector_store import SpartanVectorStore, DEFAULT_MODEL_NAME
 

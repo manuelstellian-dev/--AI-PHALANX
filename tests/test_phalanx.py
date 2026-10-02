@@ -655,7 +655,7 @@ class TestHelotAdditionalEdgeCases:
     @pytest.mark.asyncio
     async def test_calculate_survival_with_critical_cpu(self, monkeypatch):
         """Test survival calculation with critical CPU usage."""
-        import psutil
+        from polis import sysinfo
         
         # Mock critical CPU usage (>90%)
         def mock_cpu_percent(*args, **kwargs):
@@ -666,8 +666,8 @@ class TestHelotAdditionalEdgeCases:
                 percent = 50.0
             return MemInfo()
         
-        monkeypatch.setattr(psutil, 'cpu_percent', mock_cpu_percent)
-        monkeypatch.setattr(psutil, 'virtual_memory', mock_virtual_memory)
+        monkeypatch.setattr(sysinfo, 'cpu_percent', mock_cpu_percent)
+        monkeypatch.setattr(sysinfo, 'virtual_memory', mock_virtual_memory)
         
         config = {}
         helot = HelotModule(config)

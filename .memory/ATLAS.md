@@ -143,6 +143,23 @@ Recall@5 86%. The CLI provides train, info, similar and explain.
 homeostasis, FFP and Krypteia. Routes: health, command, metrics (Prometheus text), lambda-mobius,
 vault and sparta. All routes except `/health` require authentication.
 
+### MAP-021 · polis — the sovereign foundation (replaces every external library)
+- **status:** active
+- **maturity:** functional
+- **cites:** LAW-015, DEC-022, INT-004
+- **files:** polis/*
+- **evidence:** tests/test_polis.py
+
+Built on Python and its standard library only. Each module was verified differentially against
+the library it replaces:
+- `log`: logging, replacing loguru.
+- `yamlite`: YAML 1.2 subset, replacing PyYAML. All repository YAML files parse identically.
+- `sysinfo`: `/proc` sensing, replacing psutil. Memory, disk and connection sets are exactly
+  equal on a live host.
+- `graph`: digraph, replacing networkx.
+
+`crypto`, `linalg`, `http`, `testing`, `lint` and `coverage` follow in the same package.
+
 ## Configuration, deployment, tooling
 
 ### MAP-011 · Configuration and dependencies

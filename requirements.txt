@@ -1,25 +1,15 @@
 # ΛΕΩΝΙΔΑΣ-AI PHALANX - Python Dependencies
-# Dependențe necesare pentru Falanga Digitală
+# LAW-015 (suveranitate absolută): toate dependențele externe sunt în curs de înlocuire
+# cu cod propriu în polis/. Deja înlocuite: loguru, pyyaml, psutil, networkx
+# (aiofiles și black erau declarate dar nefolosite). Ținta: fișier gol.
 
 # API Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 
-# Logging
-loguru==0.7.2
-
-# Configuration
-pyyaml==6.0.1
-
 # Cryptography
 cryptography==41.0.7
-
-# System Monitoring
-psutil==5.9.6
-
-# Async Support
-aiofiles==23.2.1
 
 # Testing (optional)
 pytest==7.4.3
@@ -28,15 +18,10 @@ pytest-cov==4.1.0
 httpx==0.25.2
 
 # Development (optional)
-black==23.11.0
 ruff==0.1.6
 
 # RAG Vectorial + Λ-Logos (modelul propriu de embedding - fără modele externe)
 # Notă: versiunile curente numpy / scipy necesită Python >= 3.10
 numpy>=1.24
 scipy>=1.10  # matrici rare + algebră liniară pentru Λ-Logos
-# Backend extern OPȚIONAL (nu este instalat implicit, vezi .memory/DECISIONS.md DEC-012):
-#   pip install sentence-transformers   și model_name='all-MiniLM-L6-v2'
 
-# SPARTA Foundation - Graph-based knowledge management
-networkx>=3.0

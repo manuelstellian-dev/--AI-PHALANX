@@ -4,7 +4,7 @@ Interpretează intențiile Comandantului și rutează comenzile către modulul c
 """
 
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 
 
 class CommandProcessor:

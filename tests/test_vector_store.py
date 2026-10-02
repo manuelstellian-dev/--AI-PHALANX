@@ -9,7 +9,6 @@ import shutil
 import os
 import numpy as np
 from httpx import AsyncClient
-from unittest.mock import patch
 
 from vault.vector_store import SpartanVectorStore, VectorEntry
 from vault.spartan_vault import SpartanVault, REDACTED_TEXT
@@ -53,9 +52,11 @@ class MockSentenceTransformer:
 
 @pytest.fixture(autouse=True)
 def mock_sentence_transformer():
-    """Mock SentenceTransformer to avoid network calls."""
-    with patch('vault.vector_store.SentenceTransformer', MockSentenceTransformer):
-        yield
+    """Register the deterministic mock encoder as an explicit backend (no network)."""
+    from vault.vector_store import register_backend, unregister_backend
+    register_backend('mock-encoder', MockSentenceTransformer)
+    yield
+    unregister_backend('mock-encoder')
 
 
 class TestVectorEntry:

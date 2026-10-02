@@ -6,7 +6,7 @@ REST API for semantic search and encrypted storage
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
-from loguru import logger
+from polis.log import logger
 
 from vault.spartan_vault import SpartanVault
 

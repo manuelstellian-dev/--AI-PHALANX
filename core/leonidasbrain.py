@@ -5,7 +5,7 @@ Orchestrează toate modulele și menține homeostazia sistemului (dS/dt=0)
 
 import asyncio
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 from control.fractal_pipeline import FractalFluxPipeline
 
 

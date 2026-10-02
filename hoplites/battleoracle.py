@@ -6,7 +6,7 @@ Rulează simulări rapide de risc pe NPU (50 TOPS alocare hardware)
 import asyncio
 import random
 from typing import Dict, Any, List
-from loguru import logger
+from polis.log import logger
 
 
 class BattleOracle:

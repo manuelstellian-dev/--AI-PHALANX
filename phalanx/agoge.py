@@ -6,7 +6,7 @@ Responsabil cu micro-antrenamentul și furnizarea factorului de adaptare
 import asyncio
 import random
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 
 
 class AgogeModule:

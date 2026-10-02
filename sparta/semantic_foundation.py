@@ -12,8 +12,8 @@ import json
 import os
 import re
 from typing import Dict, List, Optional, Any, Set
-import networkx as nx
-from loguru import logger
+from polis.graph import DiGraph, GraphError
+from polis.log import logger
 
 
 class SemanticFoundation:
@@ -26,7 +26,7 @@ class SemanticFoundation:
     
     Attributes:
         concepts (Dict[str, Dict]): Dictionary of concepts indexed by ID
-        graph (nx.DiGraph): Directed graph of concept relationships
+        graph (DiGraph): Directed graph of concept relationships
         domains (Set[str]): Set of all domains in the knowledge base
     """
     
@@ -47,7 +47,7 @@ class SemanticFoundation:
         self.concepts: Dict[str, Dict] = {}
         self.quarantined: Dict[str, Dict] = {}
         self.quarantine_placeholders = quarantine_placeholders
-        self.graph: nx.DiGraph = nx.DiGraph()
+        self.graph: DiGraph = DiGraph()
         self.domains: Set[str] = set()
         logger.info("🏛️ SPARTA Semantic Foundation initialized")
     
@@ -184,7 +184,7 @@ class SemanticFoundation:
                     for neighbor in neighbors:
                         if neighbor not in visited:
                             queue.append((neighbor, depth + 1))
-                except nx.NetworkXError:
+                except GraphError:
                     # Node not in graph
                     pass
         

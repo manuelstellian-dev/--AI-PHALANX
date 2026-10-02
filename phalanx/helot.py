@@ -4,9 +4,9 @@ Responsabil cu monitorizarea CPU, RAM, GPU, NPU și calcularea probabilității 
 """
 
 import asyncio
-import psutil
+from polis import sysinfo
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 
 
 class HelotModule:
@@ -40,16 +40,16 @@ class HelotModule:
             Dicționar cu statistici despre resurse
         """
         # Eșantionarea CPU durează 0.1s - rulează în thread ca să nu blocheze bucla async
-        cpu_percent = await asyncio.to_thread(psutil.cpu_percent, interval=0.1)
-        cpu_count = psutil.cpu_count()
+        cpu_percent = await asyncio.to_thread(sysinfo.cpu_percent, interval=0.1)
+        cpu_count = sysinfo.cpu_count()
         
         resources = {
             'cpu_percent': cpu_percent,
             'cpu_count': cpu_count,
-            'memory_percent': psutil.virtual_memory().percent,
-            'memory_available_gb': psutil.virtual_memory().available / (1024**3),
-            'disk_percent': psutil.disk_usage('/').percent,
-            'disk_free_gb': psutil.disk_usage('/').free / (1024**3)
+            'memory_percent': sysinfo.virtual_memory().percent,
+            'memory_available_gb': sysinfo.virtual_memory().available / (1024**3),
+            'disk_percent': sysinfo.disk_usage('/').percent,
+            'disk_free_gb': sysinfo.disk_usage('/').free / (1024**3)
         }
         
         # Calculează factorul de paralelism (P)

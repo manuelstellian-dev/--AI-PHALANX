@@ -11,7 +11,7 @@ import os
 import threading
 from typing import Optional
 
-from loguru import logger
+from polis.log import logger
 
 from logos.corpus import REPO_ROOT, build_corpus
 from logos.model import LogosEmbedder

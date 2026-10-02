@@ -11,7 +11,7 @@ import os
 import threading
 from typing import Any, Dict, Optional
 
-from loguru import logger
+from polis.log import logger
 
 from sparta.foundation_bridge import FoundationBridge
 from sparta.reflexive_generator import ReflexiveGenerator

@@ -6,7 +6,7 @@ Verifică și impune izolarea rețelei (Air-Gap)
 import socket
 import subprocess
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 
 
 class ShieldBearer:
@@ -109,8 +109,8 @@ class ShieldBearer:
         
         try:
             # Utilizează psutil pentru a obține conexiunile (dacă este disponibil)
-            import psutil
-            for conn in psutil.net_connections(kind='inet'):
+            from polis import sysinfo
+            for conn in sysinfo.net_connections(kind='inet'):
                 if conn.status == 'ESTABLISHED':
                     connections.append({
                         'local': f"{conn.laddr.ip}:{conn.laddr.port}",

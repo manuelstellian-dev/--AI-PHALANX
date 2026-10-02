@@ -7,7 +7,7 @@ import os
 import base64
 from typing import Dict, Any, Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from loguru import logger
+from polis.log import logger
 
 
 class SpartanGuard:

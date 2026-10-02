@@ -6,7 +6,7 @@ Expune SPARTA Foundation (raționament anti-halucinație) prin API
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 
 from sparta.runtime import get_runtime
 

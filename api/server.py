@@ -11,9 +11,9 @@ from typing import Any, Dict, Optional
 import asyncio
 import hmac
 import time
-import yaml
+from polis import yamlite
 import os
-from loguru import logger
+from polis.log import logger
 
 from core.leonidasbrain import LeondasBrain
 from core.commandprocessor import CommandProcessor
@@ -139,7 +139,7 @@ def load_master_key_hex(cfg: Dict[str, Any]) -> Optional[str]:
     
     try:
         with open(full_path, 'r', encoding='utf-8') as f:
-            keys = yaml.safe_load(f) or {}
+            keys = yamlite.safe_load(f) or {}
         key_hex = keys.get('MASTER_AES_KEY_HEX')
         if key_hex and not str(key_hex).startswith('REPLACE_WITH'):
             logger.info(f"🔑 Master key loaded from {full_path}")
@@ -223,7 +223,7 @@ def load_config() -> dict:
     try:
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
+                config = yamlite.safe_load(f)
                 logger.info(f"✅ Configuration loaded from {config_path}")
                 return config
         else:

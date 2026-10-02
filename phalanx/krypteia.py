@@ -5,7 +5,7 @@ Monitorizează amenințările și ajustează probabilitatea de supraviețuire
 
 import threading
 from typing import Dict, Any
-from loguru import logger
+from polis.log import logger
 import time
 
 

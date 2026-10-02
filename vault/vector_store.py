@@ -7,32 +7,29 @@ import os
 import pickle
 import json
 import numpy as np
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Any, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from loguru import logger
+from polis.log import logger
 
 from logos import MODEL_FAMILY as LOGOS_FAMILY, get_model as get_logos_model
 
-# External backend (optional, NOT installed by default - see .memory/DECISIONS.md
-# DEC-012). Kept as an explicit opt-in; imported lazily, only when an external
-# model is requested, so the default path never loads torch.
-SentenceTransformer = None  # resolved on demand (tests may patch it)
+# Pluggable embedding backends (.memory DEC-023). Λ-Logos is built in. Any other
+# encoder must be registered explicitly by the operator: our code imports no
+# external model or library (LAW-015), but the capability to plug one in is kept
+# (LAW-001). A backend factory takes the model name and returns an object with
+# encode(text_or_texts, convert_to_numpy=..., show_progress_bar=...).
+_BACKENDS: Dict[str, Callable[[str], Any]] = {}
 
 
-def _external_backend_class():
-    """Return the optional SentenceTransformer class, importing it on demand."""
-    if SentenceTransformer is not None:
-        return SentenceTransformer
-    try:
-        from sentence_transformers import SentenceTransformer as backend
-    except ImportError as e:
-        raise RuntimeError(
-            "External embedding model requested, but the optional 'sentence-transformers' "
-            "package is not installed. ΛΕΩΝΙΔΑΣ uses its own model by default "
-            "(model_name='logos-v1')."
-        ) from e
-    return backend
+def register_backend(name: str, factory: Callable[[str], Any]) -> None:
+    """Register an embedding backend under a model name."""
+    _BACKENDS[name] = factory
+
+
+def unregister_backend(name: str) -> None:
+    """Remove a registered backend (no-op if absent)."""
+    _BACKENDS.pop(name, None)
 
 # Default embedding model: Λ-Logos, trained on the project's own corpus
 DEFAULT_MODEL_NAME = LOGOS_FAMILY
@@ -94,8 +91,8 @@ class SpartanVectorStore:
         Initialize the Spartan Vector Store.
         
         Args:
-            model_name: 'logos-v1' (default, own model) or the name of an external
-                SentenceTransformer model (requires the optional package)
+            model_name: 'logos-v1' (default, own model) or the name of a backend
+                registered with register_backend()
             storage_path: Path for persistent storage
         """
         self.model_name = model_name
@@ -125,10 +122,16 @@ class SpartanVectorStore:
             self.model = _LogosBackend()
             self.model_id = self.model.model_id
         else:
-            backend = _external_backend_class()
-            logger.warning(f"⚠️ Loading EXTERNAL model: {self.model_name} (opt-in)")
-            self.model = backend(self.model_name)
-            self.model_id = f"external:{self.model_name}"
+            factory = _BACKENDS.get(self.model_name)
+            if factory is None:
+                raise RuntimeError(
+                    f"No embedding backend registered for '{self.model_name}'. ΛΕΩΝΙΔΑΣ uses its own "
+                    "model ('logos-v1'); any other encoder must be registered explicitly with "
+                    "vault.vector_store.register_backend()."
+                )
+            logger.warning(f"⚠️ Loading registered backend: {self.model_name} (opt-in)")
+            self.model = factory(self.model_name)
+            self.model_id = f"registered:{self.model_name}"
         logger.info(f"✅ Embedding model ready: {self.model_id}")
         
         if self.stored_model_id and self.entries and self.stored_model_id != self.model_id:

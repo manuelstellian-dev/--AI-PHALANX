@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 from enum import Enum
 import math
-from loguru import logger
+from polis.log import logger
 from control.lambda_mobius import LambdaMobiusEngine, LambdaState, LambdaMetrics
 
 

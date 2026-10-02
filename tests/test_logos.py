@@ -156,36 +156,31 @@ class TestVectorStoreIntegration:
         assert results[0]['id'] == "d1"
         assert vault.vector_store.model_id.startswith("logos-v1:")
 
-    def test_external_backend_requires_opt_in_package(self, tmp_path, monkeypatch):
-        import builtins
+    def test_unregistered_backend_is_refused(self, tmp_path):
+        """Nothing outside Λ-Logos is ever loaded implicitly (LAW-015)."""
         import vault.vector_store as vs
-        monkeypatch.setattr(vs, "SentenceTransformer", None)
-        real_import = builtins.__import__
-        
-        def no_external(name, *args, **kwargs):
-            if name.startswith("sentence_transformers"):
-                raise ImportError("not installed")
-            return real_import(name, *args, **kwargs)
-        monkeypatch.setattr(builtins, "__import__", no_external)
         store = vs.SpartanVectorStore(model_name="all-MiniLM-L6-v2", storage_path=str(tmp_path))
-        with pytest.raises(RuntimeError, match="optional"):
+        with pytest.raises(RuntimeError, match="No embedding backend registered"):
             store.embed_text("x")
 
-    def test_external_backend_still_available_as_opt_in(self, tmp_path, monkeypatch):
-        """The external capability is preserved: an explicit model name uses it."""
+    def test_external_backend_still_available_as_opt_in(self, tmp_path):
+        """The plug-in capability is preserved: an explicitly registered encoder is used."""
         import vault.vector_store as vs
         
-        class StubExternalModel:  # stands in for the optional package (no network)
+        class StubEncoder:  # any operator-supplied encoder with encode()
             def __init__(self, name):
                 self.name = name
             
             def encode(self, texts, convert_to_numpy=True, show_progress_bar=False):
                 return np.ones(384, dtype=np.float32)
         
-        monkeypatch.setattr(vs, "SentenceTransformer", StubExternalModel)
-        store = vs.SpartanVectorStore(model_name="all-MiniLM-L6-v2", storage_path=str(tmp_path))
-        assert store.embed_text("x").shape == (384,)
-        assert store.model_id == "external:all-MiniLM-L6-v2"
+        vs.register_backend("stub-encoder", StubEncoder)
+        try:
+            store = vs.SpartanVectorStore(model_name="stub-encoder", storage_path=str(tmp_path))
+            assert store.embed_text("x").shape == (384,)
+            assert store.model_id == "registered:stub-encoder"
+        finally:
+            vs.unregister_backend("stub-encoder")
 
     def test_model_change_marks_vectors_stale_and_reindex_fixes(self, tmp_path):
         import json

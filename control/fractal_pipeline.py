@@ -14,7 +14,7 @@ The pipeline runs continuously, adapting its cycle time using Λ-MÖBIUS metrics
 
 import asyncio
 from typing import Dict, Any, List
-from loguru import logger
+from polis.log import logger
 
 
 class FractalFluxPipeline:

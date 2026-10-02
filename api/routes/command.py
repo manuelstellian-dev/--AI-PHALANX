@@ -6,7 +6,7 @@ Procesează comenzile tactice către ΛΕΩΝΙΔΑΣ-AI
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
-from loguru import logger
+from polis.log import logger
 import api.server as server
 
 router = APIRouter()
