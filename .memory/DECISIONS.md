@@ -373,3 +373,27 @@ none, and an unregistered model name is refused.
 
 **Why not delete it.** The capability, "plug in another encoder", is preserved under LAW-001. Only
 the external dependency is removed under LAW-015.
+
+### DEC-024 · Vault records sealed with own AES-256-GCM; legacy Fernet records stay readable
+- **status:** accepted
+- **date:** 2026-10-02
+- **cites:** LAW-015, LAW-001, LAW-010, DEC-022
+- **evidence:** polis/crypto.py, vault/spartan_vault.py, tests/test_crypto.py
+
+**Context.** DEC-022 ruled the project must use its own AES-256-GCM, verified against official
+vectors, and that the vault migrates from Fernet to it.
+
+**Decision.**
+- `polis.crypto` implements AES, GCM, HKDF-SHA256 and Fernet from the standards.
+- `VaultCipher` derives the GCM key from the existing vault key with
+  `HKDF(info="leonidas/vault/aes-256-gcm/v1")`, so the key file format is unchanged.
+- Each record is `LV1:` ‖ 96-bit random nonce ‖ ciphertext ‖ tag. The associated data is
+  `LV1:` ‖ entry id, so a ciphertext moved to another id fails authentication.
+- Tokens without the prefix are decrypted as legacy Fernet, which keeps existing vaults readable.
+- SpartanGuard keeps its wire format (nonce ‖ ct ‖ tag).
+
+**Residual risk (accepted by the Commander's ruling).** The implementation is pure Python. Its
+table lookups and GHASH are not constant-time, which exposes a local timing side channel. Use is
+bounded to under 2³² messages per key (invariant I-C1, enforced). Throughput is about 0.7 MiB/s,
+which is ample for vault records.
+

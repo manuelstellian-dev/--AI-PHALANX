@@ -6,7 +6,7 @@ Asigură integritatea și confidențialitatea datelor prin AES-256-GCM
 import os
 import base64
 from typing import Dict, Any, Optional
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from polis.crypto import AESGCM
 from polis.log import logger
 
 

@@ -1,15 +1,12 @@
 # ΛΕΩΝΙΔΑΣ-AI PHALANX - Python Dependencies
 # LAW-015 (suveranitate absolută): toate dependențele externe sunt în curs de înlocuire
-# cu cod propriu în polis/. Deja înlocuite: loguru, pyyaml, psutil, networkx
+# cu cod propriu în polis/. Deja înlocuite: loguru, pyyaml, psutil, networkx, cryptography
 # (aiofiles și black erau declarate dar nefolosite). Ținta: fișier gol.
 
 # API Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
-
-# Cryptography
-cryptography==41.0.7
 
 # Testing (optional)
 pytest==7.4.3

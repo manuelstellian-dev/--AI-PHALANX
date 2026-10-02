@@ -8,12 +8,53 @@ import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 from polis.log import logger
-from cryptography.fernet import Fernet
+import base64
+
+from polis.crypto import AESGCM, Fernet, InvalidTag, hkdf_sha256
 from .vector_store import SpartanVectorStore, DEFAULT_MODEL_NAME
 
 
 # Marker kept in the semantic index in place of plaintext for encrypted entries
 REDACTED_TEXT = "[ENCRYPTED]"
+
+# Version prefix of AES-256-GCM vault tokens; anything else is a legacy Fernet token
+VAULT_TOKEN_PREFIX = b"LV1:"
+
+
+class VaultCipher:
+    """
+    Vault encryption: AES-256-GCM (polis.crypto) with legacy Fernet read support.
+
+    - The GCM key is derived from the vault key with HKDF-SHA256
+      (info "leonidas/vault/aes-256-gcm/v1"), the first step of the key
+      hierarchy required by the Supreme Specification (DR-13).
+    - Token = "LV1:" || nonce(12) || ciphertext || tag(16). The prefix and the
+      entry id are authenticated as associated data, so a record cannot be
+      moved to another id undetected.
+    - Tokens written before the sovereignty migration (Fernet) still decrypt
+      (LAW-001); they are rewritten as GCM tokens on the next store.
+    """
+    
+    def __init__(self, vault_key: bytes):
+        raw = base64.urlsafe_b64decode(vault_key)
+        if len(raw) != 32:
+            raise ValueError("Vault key must be 32 url-safe base64-encoded bytes")
+        self._gcm = AESGCM(hkdf_sha256(raw, 32, info=b"leonidas/vault/aes-256-gcm/v1"))
+        self._legacy = Fernet(vault_key)
+    
+    def encrypt(self, data: bytes, context: bytes = b"") -> bytes:
+        """Encrypt `data`, binding `context` (the entry id) as associated data."""
+        nonce = os.urandom(12)
+        return VAULT_TOKEN_PREFIX + nonce + self._gcm.encrypt(nonce, data, VAULT_TOKEN_PREFIX + context)
+    
+    def decrypt(self, token: bytes, context: bytes = b"") -> bytes:
+        """Decrypt a GCM token (verifying `context`) or a legacy Fernet token."""
+        if token.startswith(VAULT_TOKEN_PREFIX):
+            body = token[len(VAULT_TOKEN_PREFIX):]
+            if len(body) < 12 + AESGCM.TAG_SIZE:
+                raise InvalidTag("Truncated vault token")
+            return self._gcm.decrypt(body[:12], body[12:], VAULT_TOKEN_PREFIX + context)
+        return self._legacy.decrypt(token)
 
 
 class SpartanVault:
@@ -21,7 +62,8 @@ class SpartanVault:
     SPARTAN VAULT - Encrypted Storage with RAG Vectorial
     
     Features:
-    - Fernet authenticated encryption (AES-128-CBC + HMAC-SHA256) for sensitive data
+    - AES-256-GCM authenticated encryption (own implementation, polis.crypto),
+      key derived from the vault key by HKDF; legacy Fernet tokens still readable
     - Encrypted entries are indexed by embedding only; plaintext is not kept
       in the index unless `index_plaintext=True`
     - Vector embeddings for semantic search
@@ -37,7 +79,7 @@ class SpartanVault:
         Initialize the Spartan Vault.
         
         Args:
-            encryption_key: Fernet encryption key. If None it is resolved from
+            encryption_key: Vault key (32 url-safe base64 bytes). If None it is resolved from
                 SPARTA_VAULT_KEY, then from <storage_path>/encryption.key, and
                 only generated when neither exists (so saved data stays readable
                 across restarts)
@@ -53,7 +95,7 @@ class SpartanVault:
         # Initialize encryption
         if encryption_key is None:
             encryption_key = self._resolve_encryption_key()
-        self.cipher = Fernet(encryption_key)
+        self.cipher = VaultCipher(encryption_key)
         self.encryption_key = encryption_key
         
         # Initialize vector store
@@ -76,7 +118,7 @@ class SpartanVault:
         Resolve the vault key: environment > persisted key file > new key.
         
         Returns:
-            Fernet key bytes
+            Vault key bytes (32 url-safe base64-encoded bytes)
         """
         env_key = os.getenv('SPARTA_VAULT_KEY')
         if env_key:
@@ -107,7 +149,7 @@ class SpartanVault:
             Storage result dictionary
         """
         # Encrypt data
-        encrypted = self.cipher.encrypt(data.encode('utf-8'))
+        encrypted = self.cipher.encrypt(data.encode('utf-8'), id.encode('utf-8'))
         self.encrypted_storage[id] = encrypted
         
         result = {
@@ -135,7 +177,7 @@ class SpartanVault:
             return None
         
         try:
-            decrypted = self.cipher.decrypt(encrypted).decode('utf-8')
+            decrypted = self.cipher.decrypt(encrypted, id.encode('utf-8')).decode('utf-8')
             return decrypted
         except Exception as e:
             logger.error(f"❌ Error decrypting data for {id}: {e}")
@@ -158,7 +200,7 @@ class SpartanVault:
         """
         # Store encrypted version
         if encrypt:
-            encrypted = self.cipher.encrypt(text.encode('utf-8'))
+            encrypted = self.cipher.encrypt(text.encode('utf-8'), id.encode('utf-8'))
             self.encrypted_storage[id] = encrypted
         
         # Add to vector store for semantic search. The embedding is computed from

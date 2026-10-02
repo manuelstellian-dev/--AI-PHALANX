@@ -652,7 +652,7 @@ class TestSpartanVault:
     
     def test_vault_key_from_environment(self, temp_storage, monkeypatch):
         """SPARTA_VAULT_KEY takes precedence and is never written to disk."""
-        from cryptography.fernet import Fernet
+        from polis.crypto import Fernet
         key = Fernet.generate_key()
         monkeypatch.setenv('SPARTA_VAULT_KEY', key.decode('utf-8'))
         

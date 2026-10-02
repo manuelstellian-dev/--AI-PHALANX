@@ -29,7 +29,7 @@ LOCAL_PACKAGES = {'api', 'core', 'control', 'phalanx', 'hoplites', 'vault', 'spa
 
 # Libraries not yet replaced during the sovereignty migration (DEC-022).
 # This set may only shrink; LAW-015 is fully met when it is empty.
-PENDING = {'cryptography', 'numpy', 'scipy', 'fastapi', 'pydantic', 'uvicorn', 'httpx', 'pytest'}
+PENDING = {'numpy', 'scipy', 'fastapi', 'pydantic', 'uvicorn', 'httpx', 'pytest'}
 
 
 def _third_party_imports():

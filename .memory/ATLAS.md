@@ -148,7 +148,7 @@ vault and sparta. All routes except `/health` require authentication.
 - **maturity:** functional
 - **cites:** LAW-015, DEC-022, INT-004
 - **files:** polis/*
-- **evidence:** tests/test_polis.py
+- **evidence:** tests/test_polis.py, tests/test_crypto.py
 
 Built on Python and its standard library only. Each module was verified differentially against
 the library it replaces:
@@ -157,8 +157,12 @@ the library it replaces:
 - `sysinfo`: `/proc` sensing, replacing psutil. Memory, disk and connection sets are exactly
   equal on a live host.
 - `graph`: digraph, replacing networkx.
+- `crypto`: AES-128/192/256 (FIPS-197), AES-GCM (SP 800-38D), HKDF-SHA256 (RFC 5869) and a
+  Fernet reader/writer, replacing cryptography. It is pinned by the official vectors. 600 random
+  GCM cases were byte-identical to the outgoing library. Residual risk: pure-Python table lookups
+  are not constant-time (DEC-024).
 
-`crypto`, `linalg`, `http`, `testing`, `lint` and `coverage` follow in the same package.
+`linalg`, `http`, `testing`, `lint` and `coverage` follow in the same package.
 
 ## Configuration, deployment, tooling
 
