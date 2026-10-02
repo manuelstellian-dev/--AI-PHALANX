@@ -4,7 +4,6 @@ Orchestrează toate modulele și menține homeostazia sistemului (dS/dt=0)
 """
 
 import asyncio
-import time
 from typing import Dict, Any
 from loguru import logger
 from control.fractal_pipeline import FractalFluxPipeline
@@ -36,7 +35,7 @@ class LeondasBrain:
         logger.info("🔄 FFP Pipeline initialized in LeondasBrain")
         
         logger.info("🛡️ ΛΕΩΝΙΔΑΣ Brain initialized")
-        logger.info(f"🏛️ Motto: ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)")
+        logger.info("🏛️ Motto: ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)")
 
     def calculate_lambda_tas(self, parallelism: float, workload: float) -> float:
         """

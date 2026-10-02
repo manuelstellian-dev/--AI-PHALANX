@@ -7,11 +7,10 @@ măsoară performanța și calculează metrici folosind Kronos-Arbiter.
 """
 
 from concurrent.futures import ProcessPoolExecutor, as_completed, Future
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, List, Any, Dict, Optional, Tuple
 import multiprocessing
 import time
-import os
 from loguru import logger
 
 # Fix for Python 3.12+ multiprocessing fork deprecation warning

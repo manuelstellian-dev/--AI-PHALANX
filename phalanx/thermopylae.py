@@ -4,7 +4,6 @@ Execută auto-distrugerea controlată dacă probabilitatea de supraviețuire est
 """
 
 import os
-import asyncio
 from typing import Dict, Any
 from loguru import logger
 import shutil

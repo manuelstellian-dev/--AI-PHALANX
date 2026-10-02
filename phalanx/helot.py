@@ -4,7 +4,6 @@ Responsabil cu monitorizarea CPU, RAM, GPU, NPU și calcularea probabilității 
 """
 
 import psutil
-import asyncio
 from typing import Dict, Any
 from loguru import logger
 

@@ -262,7 +262,7 @@ class LambdaMobiusEngine:
                 logger.debug(f"🔍 Λ-Arbiter selected UNWRAP (U = {U})")
             else:
                 state = LambdaState.STEADY
-                logger.debug(f"⚖️ Λ-Arbiter selected STEADY")
+                logger.debug("⚖️ Λ-Arbiter selected STEADY")
             
             return state
             

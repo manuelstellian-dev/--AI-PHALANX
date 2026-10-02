@@ -8,7 +8,6 @@ Complete test suite covering:
 - Integration with Kronos-Arbiter
 """
 
-import pytest
 import math
 from control.lambda_mobius import (
     LambdaState,
@@ -491,6 +490,9 @@ class TestKronosIntegration:
         metrics2 = kronos.calculate_supreme_time(k=1, P=1, U=2000)
         state2 = kronos.get_lambda_state()
         
+        # Metrics must reflect the arbiter-selected states
+        assert metrics1.state == state1
+        assert metrics2.state == state2
         # States should potentially be different
         assert state1 in [LambdaState.WRAP, LambdaState.STEADY, LambdaState.UNWRAP]
         assert state2 in [LambdaState.WRAP, LambdaState.STEADY, LambdaState.UNWRAP]
@@ -723,7 +725,6 @@ class TestEdgeCasesAndBoundaries:
         
         # Mock the math.log to raise an exception
         import unittest.mock as mock
-        import math
         
         with mock.patch('math.log', side_effect=ValueError("Test error")):
             T_wrap = engine.calculate_T_Wrap(100, 4, 10)
@@ -737,7 +738,6 @@ class TestEdgeCasesAndBoundaries:
         
         # Mock the math.log to raise an exception
         import unittest.mock as mock
-        import math
         
         with mock.patch('math.log', side_effect=ValueError("Test error")):
             T_mult = engine.calculate_T_Mult(100, 4, 10)
@@ -751,7 +751,6 @@ class TestEdgeCasesAndBoundaries:
         
         # Mock math.log to raise an exception
         import unittest.mock as mock
-        import math
         
         with mock.patch('math.log', side_effect=ValueError("Test error")):
             state = engine.arbiter_select(100, 4, 10)

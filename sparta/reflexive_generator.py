@@ -8,7 +8,7 @@ This module implements reflexive generation with verification, providing:
 - Honest uncertainty admission
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from loguru import logger
 from sparta.semantic_foundation import SemanticFoundation
 
@@ -314,7 +314,7 @@ class ReflexiveGenerator:
         response_parts.append(f"\n{primary['definition']}")
         
         if related_concepts:
-            response_parts.append(f"\n\nThis concept is related to:")
+            response_parts.append("\n\nThis concept is related to:")
             for related in related_concepts[:2]:
                 response_parts.append(
                     f"\n- {related.get('topic', related['id'])}: {related['definition']}"
@@ -450,5 +450,5 @@ class ReflexiveGenerator:
                 'source_concepts': concepts
             })
         
-        logger.debug(f"✅ Batch verification complete")
+        logger.debug("✅ Batch verification complete")
         return results

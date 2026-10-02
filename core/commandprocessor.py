@@ -3,7 +3,7 @@ Command Processor - Λ-Möbius Engine
 Interpretează intențiile Comandantului și rutează comenzile către modulul corect
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from loguru import logger
 
 

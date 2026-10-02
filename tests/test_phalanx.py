@@ -3,7 +3,6 @@ Tests pentru modulele Phalanx (Helot, Agoge, Krypteia, Thermopylae)
 """
 
 import pytest
-import asyncio
 from phalanx.helot import HelotModule
 from phalanx.agoge import AgogeModule
 from phalanx.krypteia import KrypteiaModule
@@ -212,6 +211,7 @@ class TestThermopylaeModule:
         helot = HelotModule(config)
         
         resources = await helot.monitor_resources()
+        assert 'parallelism_factor' in resources
         # Verifică că probabilitatea este calculată
         assert 0.0 <= helot.survival_probability <= 1.0
     
@@ -442,6 +442,7 @@ class TestHelotEdgeCases:
         helot = HelotModule(config)
         
         resources = await helot.monitor_resources()
+        assert resources['parallelism_factor'] >= 1.0
         
         # Verifică că probabilitatea e redusă din cauza resurselor critice
         assert helot.survival_probability < 1.0
@@ -467,7 +468,6 @@ class TestThermopylaeEdgeCases:
     async def test_thermopylae_emergency_armed(self):
         """Test protocol emergency când e armat și sub prag."""
         import tempfile
-        import os
         
         with tempfile.TemporaryDirectory() as tmpdir:
             config = {

@@ -18,8 +18,8 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sparta import SemanticFoundation, FoundationBridge, ReflexiveGenerator
-from loguru import logger
+from sparta import SemanticFoundation, FoundationBridge, ReflexiveGenerator  # noqa: E402
+from loguru import logger  # noqa: E402
 
 # Configure logger
 logger.remove()
@@ -48,14 +48,14 @@ def main():
     
     # Display statistics
     stats = foundation.get_statistics()
-    logger.info(f"\n📊 Foundation Statistics:")
+    logger.info("\n📊 Foundation Statistics:")
     logger.info(f"   Total Concepts: {stats['total_concepts']}")
     logger.info(f"   Total Domains: {stats['total_domains']}")
     logger.info(f"   Average Confidence: {stats['average_confidence']:.2f}")
     logger.info(f"   Total Relations: {stats['total_relations']}")
     
     # Display domain distribution
-    logger.info(f"\n🏛️ Domain Distribution:")
+    logger.info("\n🏛️ Domain Distribution:")
     for domain, count in sorted(stats['domain_distribution'].items()):
         logger.info(f"   {domain}: {count} concepts")
     
@@ -86,7 +86,7 @@ def main():
     query = "What is energy conservation?"
     enrichment = bridge.enrich_query(query)
     logger.info(f"Query: {query}")
-    logger.info(f"✅ Enrichment:")
+    logger.info("✅ Enrichment:")
     logger.info(f"   Relevant Concepts: {', '.join(enrichment['relevant_concepts'])}")
     logger.info(f"   Confidence: {enrichment['confidence']:.2f}")
     
@@ -108,7 +108,7 @@ def main():
         "Explain neural networks",
         foundation
     )
-    logger.info(f"✅ Response:")
+    logger.info("✅ Response:")
     logger.info(f"   {response[:200]}...")
     
     # Demonstrate hallucination detection

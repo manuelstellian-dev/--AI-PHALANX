@@ -187,7 +187,7 @@ class FoundationBridge:
             - known_concepts: Concepts related to the query
             - recommendation: Recommended action
         """
-        logger.debug(f"🔍 Determining epistemic status for query")
+        logger.debug("🔍 Determining epistemic status for query")
         
         # Enrich query to find relevant concepts
         enrichment = self.enrich_query(query)
@@ -238,7 +238,7 @@ class FoundationBridge:
             - validation: Validation results
             - epistemic_status: Epistemic status of the query
         """
-        logger.info(f"🌉 Bridging query to LeondasBrain")
+        logger.info("🌉 Bridging query to LeondasBrain")
         
         # Enrich the query
         enrichment = self.enrich_query(query)

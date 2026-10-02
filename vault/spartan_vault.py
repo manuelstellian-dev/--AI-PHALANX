@@ -5,11 +5,11 @@ Combines encryption with semantic search capabilities
 
 import os
 import json
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 from loguru import logger
 from cryptography.fernet import Fernet
-from .vector_store import SpartanVectorStore, VectorEntry
+from .vector_store import SpartanVectorStore
 
 
 class SpartanVault:

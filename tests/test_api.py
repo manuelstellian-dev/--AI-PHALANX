@@ -3,7 +3,6 @@ Tests pentru modulele API (server, routes)
 """
 
 import pytest
-from fastapi.testclient import TestClient
 
 
 class TestAPIServer:
@@ -77,7 +76,7 @@ class TestAPIServer:
     @pytest.mark.asyncio
     async def test_lifespan_context_startup(self):
         """Test API server lifespan startup code."""
-        from api.server import lifespan, load_config
+        from api.server import lifespan
         from fastapi import FastAPI
         import api.server as server
         
@@ -815,8 +814,12 @@ class TestCommandRoutesEdgeCases:
         
         command = TacticalCommand(type="status", payload={})
         
-        with pytest.raises(HTTPException) as exc_info:
-            await execute_command(command, "test_token")
-        
-        assert exc_info.value.status_code == 500
+        try:
+            with pytest.raises(HTTPException) as exc_info:
+                await execute_command(command, "test_token")
+            
+            assert exc_info.value.status_code == 500
+        finally:
+            # Restaurează starea originală (evită contaminarea altor teste)
+            server.command_processor = original_processor
         

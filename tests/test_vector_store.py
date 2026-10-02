@@ -9,7 +9,7 @@ import shutil
 import os
 import numpy as np
 from httpx import AsyncClient
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 
 from vault.vector_store import SpartanVectorStore, VectorEntry
 from vault.spartan_vault import SpartanVault
@@ -369,11 +369,15 @@ class TestSpartanVectorStore:
         store = SpartanVectorStore(storage_path=temp_storage)
         store.add_entry(id="doc1", text="Test")
         
-        # Make directory read-only to force save error
-        os.chmod(temp_storage, 0o444)
-        
+        # Point storage at a regular file: writing beneath it fails for every
+        # user (root ignores chmod 0o444, so permission bits are not reliable)
+        blocker = os.path.join(temp_storage, 'blocker')
+        with open(blocker, 'w') as f:
+            f.write('not a directory')
+        store.storage_path = blocker
+
         try:
-            with pytest.raises(Exception):
+            with pytest.raises(OSError):
                 store.save_to_disk()
         finally:
             # Restore permissions
@@ -556,7 +560,6 @@ class TestSpartanVault:
         vault1.save_to_disk()
         
         # Create new vault from same path
-        from cryptography.fernet import Fernet
         key_path = os.path.join(temp_storage, 'encryption.key')
         with open(key_path, 'rb') as f:
             key = f.read()

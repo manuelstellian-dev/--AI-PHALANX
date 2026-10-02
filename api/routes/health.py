@@ -5,7 +5,6 @@ Verifică starea sistemului ΛΕΩΝΙΔΑΣ-AI
 
 from fastapi import APIRouter, Depends
 from typing import Dict, Any
-from loguru import logger
 import api.server as server
 
 router = APIRouter()

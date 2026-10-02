@@ -11,11 +11,10 @@ Acest modul calculează metrici de performanță pentru execuția paralelă,
 bazate pe legea lui Amdahl și factori Spartan specifici.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Literal
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional
 from enum import Enum
 import math
-import time
 from loguru import logger
 from control.lambda_mobius import LambdaMobiusEngine, LambdaState, LambdaMetrics
 

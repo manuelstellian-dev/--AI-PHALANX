@@ -8,7 +8,7 @@ import pickle
 import json
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from loguru import logger
 from sentence_transformers import SentenceTransformer
@@ -78,7 +78,7 @@ class SpartanVectorStore:
         if self.model is None:
             logger.info(f"⚡ Loading SentenceTransformer model: {self.model_name}")
             self.model = SentenceTransformer(self.model_name)
-            logger.info(f"✅ Model loaded successfully")
+            logger.info("✅ Model loaded successfully")
     
     def embed_text(self, text: str) -> np.ndarray:
         """

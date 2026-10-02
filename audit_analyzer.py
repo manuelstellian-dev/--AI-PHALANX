@@ -7,11 +7,8 @@ Comprehensive scanner for code quality, documentation, and implementation analys
 import os
 import sys
 import ast
-import json
 from pathlib import Path
-from typing import Dict, List, Any, Set
 from collections import defaultdict
-import re
 
 
 class RepositoryAuditor:
@@ -350,7 +347,7 @@ class RepositoryAuditor:
             
             # List classes and methods
             if analysis['classes']:
-                report.append(f"- **Clase definite:**\n")
+                report.append("- **Clase definite:**\n")
                 for cls in analysis['classes']:
                     doc_status = "📚" if cls['has_docstring'] else "📄"
                     report.append(f"  - {doc_status} `{cls['name']}` ({len(cls['methods'])} metode)\n")
@@ -371,7 +368,7 @@ class RepositoryAuditor:
             if cov['has_tests']:
                 report.append(f"Testat în `{cov['test_file']}`\n")
             else:
-                report.append(f"**LIPSĂ TESTE**\n")
+                report.append("**LIPSĂ TESTE**\n")
         
         report.append("\n")
         
@@ -435,8 +432,8 @@ class RepositoryAuditor:
         report.append(f"- **📚 Documentație:** {avg_doc:.1f}% (bun)\n")
         report.append(f"- **💻 Implementare:** {impl_pct:.1f}% (moderat)\n")
         report.append(f"- **🧪 Teste:** {coverage_pct:.1f}% (necesită îmbunătățire)\n")
-        report.append(f"- **🌐 Cross-platform (desktop):** 85% (bun)\n")
-        report.append(f"- **📱 Cross-platform (mobile):** 30% (slab - dependencies native)\n")
+        report.append("- **🌐 Cross-platform (desktop):** 85% (bun)\n")
+        report.append("- **📱 Cross-platform (mobile):** 30% (slab - dependencies native)\n")
         report.append("\n")
         
         report.append("---\n")

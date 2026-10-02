@@ -9,7 +9,6 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from vault.spartan_vault import SpartanVault
-from vault.vector_store import SpartanVectorStore
 
 
 router = APIRouter()

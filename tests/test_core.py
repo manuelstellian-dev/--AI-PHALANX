@@ -3,7 +3,6 @@ Tests pentru modulele Core (LeondasBrain, CommandProcessor)
 """
 
 import pytest
-import asyncio
 from core.leonidasbrain import LeondasBrain
 from core.commandprocessor import CommandProcessor
 
@@ -526,15 +525,34 @@ class TestLeondasBrainAdditionalEdgeCases:
     @pytest.mark.asyncio
     async def test_homeostasis_loop_with_thermopylae_warning(self):
         """Test homeostasis loop triggering Thermopylae warning."""
-        from phalanx.helot import HelotModule
-        from phalanx.thermopylae import ThermopylaeModule
-        
+        import asyncio
+
         config = {
             'hardware': {'cpu_cores': 4},
             'current_workload': 0.5
         }
         brain = LeondasBrain(config)
-        
+
+        class CriticalHelot:
+            async def get_survival_probability(self):
+                return 0.5
+
+        class RecordingThermopylae:
+            def __init__(self):
+                self.calls = []
+
+            async def check_emergency_protocol(self, survival_prob):
+                self.calls.append(survival_prob)
+                brain.is_running = False  # o singură iterație
+
+        thermopylae = RecordingThermopylae()
+        await brain.initialize_phalanx({'helot': CriticalHelot(), 'thermopylae': thermopylae})
+
+        await asyncio.wait_for(brain.homeostasis_loop(), timeout=15)
+
+        # Supraviețuire critică → Thermopylae trebuie consultat cu valoarea reală
+        assert thermopylae.calls == [0.5]
+
 
 
 class TestCoreCoverageBoosters:
@@ -543,7 +561,6 @@ class TestCoreCoverageBoosters:
     @pytest.mark.asyncio
     async def test_homeostasis_with_low_survival(self):
         """Test homeostasis loop with low survival probability."""
-        from phalanx.helot import HelotModule
         from phalanx.thermopylae import ThermopylaeModule
         
         config = {

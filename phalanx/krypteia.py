@@ -3,9 +3,8 @@ Krypteia Module - Sistemul de Informații și Observare Tăcută
 Monitorizează amenințările și ajustează probabilitatea de supraviețuire
 """
 
-import asyncio
 import threading
-from typing import Dict, Any, List
+from typing import Dict, Any
 from loguru import logger
 import time
 

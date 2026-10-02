@@ -13,7 +13,7 @@ The pipeline runs continuously, adapting its cycle time using Λ-MÖBIUS metrics
 """
 
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from loguru import logger
 
 
@@ -248,7 +248,7 @@ class FractalFluxPipeline:
                     # Could trigger defensive measures
                     logger.info("💊 HEAL: Addressing low survival probability")
             
-            logger.info(f"✅ HEAL: Repairs complete")
+            logger.info("✅ HEAL: Repairs complete")
             
         except Exception as e:
             logger.error(f"❌ HEAL error: {e}")
@@ -316,12 +316,12 @@ class FractalFluxPipeline:
                 rec_type = rec.get('type')
                 action = rec.get('action')
                 
-                logger.info(f"🎯 REINVEST: {action} (reason: {rec.get('reason')})")
+                logger.info(f"🎯 REINVEST [{rec_type}]: {action} (reason: {rec.get('reason')})")
                 
                 # Implementation would trigger actual improvements
                 # For now, just log the actions
             
-            logger.info(f"✅ REINVEST: Improvements applied")
+            logger.info("✅ REINVEST: Improvements applied")
             
         except Exception as e:
             logger.error(f"❌ REINVEST error: {e}")

@@ -4,8 +4,6 @@ Tests for SPARTA Foundation modules.
 
 import pytest
 import os
-import json
-import tempfile
 from sparta.semantic_foundation import SemanticFoundation
 from sparta.foundation_bridge import FoundationBridge
 from sparta.reflexive_generator import ReflexiveGenerator

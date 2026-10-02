@@ -4,7 +4,6 @@ Target: 80%+ coverage pentru audit_analyzer.py (243 linii)
 """
 
 import pytest
-import os
 import tempfile
 import shutil
 from pathlib import Path

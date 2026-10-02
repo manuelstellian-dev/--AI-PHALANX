@@ -11,10 +11,7 @@ Teste comprehensive pentru:
 """
 
 import pytest
-import asyncio
 import time
-import math
-from typing import List, Dict, Any
 
 # Import module principale
 from control.kronos_arbiter import (
@@ -500,7 +497,8 @@ class TestPhalanxExecutor:
         config = PhalanxConfig(max_workers=2)
         executor = PhalanxExecutor(config)
         
-        tasks = [50000] * 4
+        # ~50ms/task: munca reală amortizează overhead-ul de spawn (~100ms)
+        tasks = [1_000_000] * 4
         
         results, metrici = executor.execute_tasks(
             cpu_intensive_task,
@@ -1066,7 +1064,7 @@ class TestIntegrationKronosPhalanxScheduler:
         real_speedup = t_seq / t_par if t_par > 0 else 1.0
         
         # Log pentru debugging
-        print(f"\nIntegration Test Results:")
+        print("\nIntegration Test Results:")
         print(f"  T_sequential: {t_seq:.3f}s")
         print(f"  T_parallel (Kronos prediction): {metrikos.t_parallel:.3f}s")
         print(f"  T_parallel (actual): {t_par:.3f}s")
@@ -1105,7 +1103,9 @@ class TestIntegrationKronosPhalanxScheduler:
         
         results_level1 = []
         for func, arg in level1_funcs_args:
-            results_level1.append(func(arg))
+            level_results, _timings = executor.execute_tasks(func, [arg])
+            results_level1.extend(level_results)
+        assert results_level1 == [func(arg) for func, arg in level1_funcs_args]
         
         # Marchează ca completate
         for tid in plan[0]:
@@ -1293,13 +1293,13 @@ class TestKronosFormulaVerification:
         # Verifică egalitate exactă (cu precizie float)
         assert abs(t_par - expected) < 1e-10
         
-        print(f"\nKronos Formula Verification:")
+        print("\nKronos Formula Verification:")
         print(f"  T_sequential = {t_seq}")
         print(f"  N = {n}, Θ = {theta}, Λ = {lambda_bal}, η = {eta}")
         print(f"  T_parallel (calculated) = {t_par:.6f}")
         print(f"  T_parallel (expected) = {expected:.6f}")
         print(f"  Difference = {abs(t_par - expected):.10f}")
-        print(f"  ✅ Formula verified!")
+        print("  ✅ Formula verified!")
     
     def test_real_speedup_measurement_vs_kronos_prediction(self):
         """Test măsurare speedup real vs predicție Kronos."""
@@ -1308,8 +1308,8 @@ class TestKronosFormulaVerification:
         config = PhalanxConfig(max_workers=2)
         executor = PhalanxExecutor(config)
         
-        # Task-uri pentru test
-        tasks = [50000] * 4
+        # Task-uri pentru test (~50ms/task, amortizează overhead-ul de spawn)
+        tasks = [1_000_000] * 4
         
         # Măsoară real
         results, metrici = executor.execute_tasks(
@@ -1323,7 +1323,7 @@ class TestKronosFormulaVerification:
         if metrici['t_sequential'] > 0:
             metrikos = arbiter.calculate_metrikos(t_sequential=metrici['t_sequential'])
             
-            print(f"\nReal vs Kronos Prediction:")
+            print("\nReal vs Kronos Prediction:")
             print(f"  T_sequential (measured) = {metrici['t_sequential']:.3f}s")
             print(f"  T_parallel (measured) = {metrici['t_parallel']:.3f}s")
             print(f"  T_parallel (Kronos) = {metrikos.t_parallel:.3f}s")
@@ -1353,7 +1353,7 @@ class TestKronosFormulaVerification:
         assert metrikos_2.speedup < metrikos_4.speedup
         assert metrikos_4.speedup < metrikos_8.speedup
         
-        print(f"\nSpeedup Scaling:")
+        print("\nSpeedup Scaling:")
         print(f"  2 cores: speedup = {metrikos_2.speedup:.2f}x")
         print(f"  4 cores: speedup = {metrikos_4.speedup:.2f}x")
         print(f"  8 cores: speedup = {metrikos_8.speedup:.2f}x")
@@ -1379,7 +1379,7 @@ class TestKronosFormulaVerification:
         max_theoretical = 1.0 / (1.0 - 0.99)  # 1 / 0.01 = 100
         assert speedup_99 <= max_theoretical
         
-        print(f"\nAmdahl's Law Limits:")
+        print("\nAmdahl's Law Limits:")
         print(f"  90% parallel: speedup = {speedup_90:.2f}x (limit ≈ 10x)")
         print(f"  95% parallel: speedup = {speedup_95:.2f}x (limit ≈ 20x)")
         print(f"  99% parallel: speedup = {speedup_99:.2f}x (limit ≈ 100x)")
@@ -1564,6 +1564,7 @@ class TestTaskSchedulerExceptions:
         try:
             sorted_order = graph.topological_sort()
             # Ar putea sau nu să eșueze în funcție de implementare
+            assert isinstance(sorted_order, list)
         except ValueError as e:
             # Expected - cycle or missing dependency
             assert "cycle" in str(e).lower() or "remaining" in str(e).lower() or "cannot" in str(e).lower()

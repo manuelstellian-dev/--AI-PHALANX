@@ -4,7 +4,7 @@ Permite interogări web doar dacă external_access_enabled este true
 """
 
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from loguru import logger
 
 

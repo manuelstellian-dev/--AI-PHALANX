@@ -18,11 +18,9 @@ Usage:
 
 import os
 import sys
-import ast
-import json
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Set, Tuple
+from typing import List
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -271,7 +269,7 @@ class AutonomousAuditAgent:
         
         try:
             with open(missing_doc, 'r', encoding='utf-8') as f:
-                content = f.read()
+                f.read()  # readability check; components below are canonical
             
             # Parse missing components
             missing_components = {
@@ -405,7 +403,7 @@ class AutonomousAuditAgent:
             "**ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)** - *\"Come and Take Them\"*",
             "",
             f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"**Scan Type:** Autonomous Full Repository Audit",
+            "**Scan Type:** Autonomous Full Repository Audit",
             "",
             "---",
             "",
@@ -457,7 +455,7 @@ class AutonomousAuditAgent:
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(content))
         
-        print(f"   ✅ Generated STATUS_REPORT.md")
+        print("   ✅ Generated STATUS_REPORT.md")
     
     def _generate_progress_audit(self):
         """Generate PROGRESS_AUDIT.md with detailed progress tracking"""
@@ -552,7 +550,7 @@ class AutonomousAuditAgent:
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(content))
         
-        print(f"   ✅ Generated PROGRESS_AUDIT.md")
+        print("   ✅ Generated PROGRESS_AUDIT.md")
     
     def _update_audit_report(self):
         """Update existing AUDIT_REPORT.md with latest findings"""
@@ -737,7 +735,7 @@ def main():
     
     # Run audit
     agent = AutonomousAuditAgent(args.repo)
-    results = agent.run_full_audit()
+    agent.run_full_audit()
     agent.print_summary()
     
     return 0

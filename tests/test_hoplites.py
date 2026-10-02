@@ -3,7 +3,6 @@ Tests pentru modulele Hoplites (Guard, Shield, Oracle, Weapon, Messenger)
 """
 
 import pytest
-import asyncio
 from hoplites.spartanguard import SpartanGuard
 from hoplites.shieldbearer import ShieldBearer
 from hoplites.battleoracle import BattleOracle
@@ -726,7 +725,7 @@ class TestSpartanGuardEdgeCases:
             encrypted = await guard.encrypt("")
             decrypted = await guard.decrypt(encrypted)
             assert decrypted == ""
-        except Exception as e:
+        except Exception:
             # Acceptăm și excepții pentru date goale
             pass
     

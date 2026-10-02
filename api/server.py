@@ -3,7 +3,7 @@
 Server FastAPI principal pe port 7300
 """
 
-from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi import FastAPI, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -204,7 +204,7 @@ async def initialize_system(config: dict):
 
 
 # Import routes
-from api.routes import health, command, metrics, vault
+from api.routes import health, command, metrics, vault  # noqa: E402 - routes import server (circular), must follow app creation
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(command.router, prefix="/api/v1", tags=["commands"])
