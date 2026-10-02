@@ -3666,4 +3666,4 @@ The earlier auto-generated figures here ("77.8% complete") came from a file-leng
 
 ### Quality gates (measured)
 
-All tests pass with 0 warnings, ruff and ShellCheck report no findings, and CI covers lint, tests and a Docker build. Exact counts are in PROJECT_STATUS.md §5.
+All tests pass with 0 warnings, ruff and ShellCheck report no findings, and a CI workflow (lint, tests, Docker build) is defined; its status is in PROJECT_STATUS.md §5. Exact counts are in PROJECT_STATUS.md §5.

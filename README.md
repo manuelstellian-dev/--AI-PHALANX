@@ -352,7 +352,7 @@ Acest proiect este licențiat sub **MIT License** - vezi fișierul [LICENSE](LIC
 | Tests | **563 passed** (`pytest -W error`, 0 warnings) |
 | Lint | `ruff` 0 findings · `shellcheck` 0 findings |
 | Coverage | 86% overall · 95% excluding `autonomous_audit_agent.py` (25%, BACKLOG B-01) |
-| CI | GitHub Actions: lint, tests, Docker build + health check |
+| CI | GitHub Actions workflow defined (lint, tests, Docker build); first runs got no runner assigned (account Actions setting) |
 
 | Component | Maturity |
 |-----------|----------|

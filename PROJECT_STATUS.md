@@ -114,8 +114,8 @@ Legend: **Functional** — real behaviour, tested · **Simulated** — runs, but
 | Shell scripts | **0** findings (`shellcheck scripts/*.sh`), `bash -n` clean |
 | YAML / Compose | all parse; `docker compose config` valid |
 | Coverage | **86%** overall; **95%** excluding `autonomous_audit_agent.py` (25%) |
-| CI | GitHub Actions: ruff, shellcheck, tests, Docker build + health check |
-| Container | Image layout verified by booting the server from exactly the `COPY`'d tree |
+| CI | Workflow defined (ruff, shellcheck, tests, Docker build + health check). **First runs were never executed**: GitHub assigned no runner (`runner_id 0`, no steps), which points to an account-level Actions restriction. The gates above were run locally |
+| Container | Image layout verified by booting the server from exactly the `COPY`'d tree. A full `docker build` was blocked in the audit sandbox by network policy (`deb.debian.org` 403) |
 
 Test distribution: hoplites 95, parallel/Kronos 95, vector store & vault 67, Λ-Möbius 56, Phalanx 43,
 system integrity 35, fractal pipeline 33, API 32, SPARTA 32, audit analyzer 32, core 29,
