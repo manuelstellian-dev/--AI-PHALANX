@@ -480,6 +480,42 @@ Volumes: redis-data, postgres-data, prometheus-data, grafana-data
 
 ---
 
+## Λ-Logos — Our Own Embedding Model
+
+```
+text ──► tokenizer (NFKD fold · words · bigrams · char 3–5-grams)
+     ──► signed feature hashing (BLAKE2b, 2¹⁵ buckets)
+     ──► TF-IDF (idf learned from the project corpus)
+     ──► randomized SVD projection (384 latent axes)
+     ──► L2-normalized vector  ·  model id = logos-v1:<sha256(params+corpus)[:12]>
+```
+
+- **No external model or API** (LAW-006): NumPy and SciPy only. Trained on SPARTA concepts,
+  `.memory/` and the documentation. The untrained fallback is a deterministic random projection.
+- **Frozen artifact** `models/logos-v1.npz`: loaded as-is, retrained only explicitly. A retrain
+  marks stored vectors stale until `SpartanVault.reindex()` runs.
+- **Consumers:** `SpartanVectorStore` (vault RAG) and Mnemosyne recall. Planned: SPARTA concept
+  retrieval (BACKLOG B-10).
+
+## Project Memory — `.memory/` and Mnemosyne
+
+```
+INTENTION (root) ─► IDENTITY ─► LAWS ─► ONTOLOGY ─► DECISIONS ─► ATLAS
+      ─► CURRENT_STATE (measured) ─► CHECKPOINT (hash chain) ─► JOURNAL ─► EXTENSIONS ─► PROTOCOL
+```
+
+- Entries have stable IDs (`LAW-006`, `DEC-012`). Typed edges are `cites`, `supersedes`,
+  `depends_on`, `evidence`, `enforced_by` and `files`.
+- `mnemosyne check` enforces:
+  - resolvable references;
+  - existing law enforcers;
+  - ATLAS coverage of every repository file;
+  - recomputed facts;
+  - an intact checkpoint chain;
+  - a lineage to INTENTION for every entry.
+- `mnemosyne boot` prints the session context. `mnemosyne query` provides hybrid Λ-Logos recall.
+- The memory runs in CI and is protected by PROTOCOL (boot, work and close microsteps).
+
 ## 📊 Implementation Status
 
 The verified, measured status (component maturity, quality gates, remediation log) is maintained in

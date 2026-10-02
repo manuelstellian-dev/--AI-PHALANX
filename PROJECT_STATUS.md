@@ -32,8 +32,16 @@
 3. **Temporal compression** — concepts extracted from "Omega-AIOS" and *Spartanized* (extract and
    transform, never combine): Kronos-Arbiter, Phalanx-Executor, Λ-Möbius, Fractal Flux Pipeline.
 
+4. **Sovereignty**: no external models or APIs. The embedding model, **Λ-Logos**, is built in this
+   repository and trained on the project's own corpus.
+5. **Continuity**: the project carries a persistent, executable memory, **`.memory/`**, which
+   Mnemosyne validates. That memory is the canonical source for intention, laws, decisions and state.
+
 Future capabilities: post-quantum cryptography, eBPF kernel monitoring, a federated Phalanx mesh,
 and an immutable audit ledger.
+
+> The compact, machine-checkable form of this whole document is `.memory/`. Start any session
+> with `python -m mnemosyne boot`.
 
 ## 2. Genesis and history
 
@@ -50,6 +58,7 @@ and an immutable audit ledger.
 | Nov 3 | #13–#16 | SPARTA Foundation implementation; knowledge base 44 → 132 → 308 → 500 concepts |
 | Nov 4 | #17–#19 | Three documentation-only audit rounds |
 | 2026 Oct 2 | — | Forensic audit and integrity remediation (this document) |
+| 2026 Oct 2 | — | Sovereignty and memory: Λ-Logos replaces the external model; 80 placeholder concepts quarantined; `.memory/` and Mnemosyne |
 
 All code from #1–#19 was authored by an AI coding agent and merged by the project owner. The history is
 linear and never rewritten. The last three PRs before this audit added documentation only. Their status
@@ -64,6 +73,9 @@ HTTP :7300 ──► FastAPI (api/server.py) ── Bearer auth (constant-time) 
                  ├─ /api/v1/health, /command/*, /metrics*, /lambda-mobius
                  ├─ /api/v1/vault/*    ──► SpartanVault (Fernet + RAG index)       [auth]
                  └─ /api/v1/sparta/*   ──► SpartaRuntime (Foundation/Bridge/Generator) [auth]
+                 │
+   embeddings ───┴─► Λ-Logos (logos/, own model; frozen artifact models/logos-v1.npz)
+   memory ─────────► .memory/ (11 typed files) ◄── Mnemosyne (validate · checkpoint · recall)
                  │
    lifespan ─────┼─► LeondasBrain.homeostasis_loop  (Λ-TAS from Helot P + CommandProcessor U)
                  ├─► FractalFluxPipeline.run_forever (control.ffp.enabled)
@@ -99,7 +111,9 @@ Legend: **Functional** — real behaviour, tested · **Simulated** — runs, but
 | Phalanx-Executor / Task-Scheduler | Functional | ProcessPool execution, dependency levels |
 | SpartanVault + Vector Store | Functional | Fernet, persisted key, redacted index, JSON persistence |
 | SPARTA Foundation / Bridge / Generator | Functional | exposed via API and command; matching is lexical (see Backlog) |
-| SPARTA knowledge base | Functional, **integrity issues** | 500 concepts; 544 dangling references; confidences all in [0.95, 1.0] |
+| SPARTA knowledge base | Functional, **integrity issues** | 500 concepts on disk; **80 template placeholders quarantined** (were served as `[VERIFIED]`), leaving 420 active in 22 domains; 224 dangling references among active concepts; confidences all in [0.95, 1.0] |
+| Λ-Logos (own embedding model) | Functional | NumPy and SciPy only; benchmark MRR 0.690 (lexical baseline 0.527); ~30 ms per embedding |
+| `.memory/` + Mnemosyne | Functional | 138 entries, 615 typed edges, 0 validation errors; hash-chained checkpoints; Λ-Logos recall |
 | Λ-Modules (7) | **Planned** | full specification in `docs/sparta/SPARTA_LAMBDA_MODULES.md` |
 | PQC, eBPF, Federated mesh, Ledger | **Planned** | `ADVANCED_CAPABILITIES.md`, `MISSING_FEATURES.md` |
 | Audit tools | Functional | `audit_analyzer.py` tested (98%); `autonomous_audit_agent.py` 25% — only its doc-protection guard is tested |
@@ -108,20 +122,21 @@ Legend: **Functional** — real behaviour, tested · **Simulated** — runs, but
 
 | Gate | Result |
 |---|---|
-| Tests | **563 passed**, 0 failed |
+| Tests | **613 passed**, 0 failed |
+| Memory | `python -m mnemosyne check`: 0 errors (references, enforcers, ATLAS coverage, measured facts, hash chain) |
+| Sovereignty | No external ML runtime: the full suite passes in a clean environment without torch or sentence-transformers (350 MB instead of 5.9 GB) |
 | Warnings | **0** (`pytest -W error`) |
 | Lint | **0** findings (`ruff check .`) |
 | Shell scripts | **0** findings (`shellcheck scripts/*.sh`), `bash -n` clean |
 | YAML / Compose | all parse; `docker compose config` valid |
-| Coverage | **86%** overall; **95%** excluding `autonomous_audit_agent.py` (25%) |
+| Coverage | **87%** overall; `logos/` and `mnemosyne/` ~98%; `autonomous_audit_agent.py` 25% |
 | CI | Workflow defined (ruff, shellcheck, tests, Docker build + health check). **First runs were never executed**: GitHub assigned no runner (`runner_id 0`, no steps), which points to an account-level Actions restriction. The gates above were run locally |
 | Container | Image layout verified by booting the server from exactly the `COPY`'d tree. A full `docker build` was blocked in the audit sandbox by network policy (`deb.debian.org` 403) |
 
-Test distribution: hoplites 95, parallel/Kronos 95, vector store & vault 67, Λ-Möbius 56, Phalanx 43,
-system integrity 35, fractal pipeline 33, API 32, SPARTA 32, audit analyzer 32, core 29,
-Λ-Möbius API 5, audit-agent guard 5, brain–FFP integration 4.
+The authoritative test count is the `tests.functions` measure in `.memory/CURRENT_STATE.md`
+(STATE-002). Mnemosyne recomputes it on every check.
 
-Source size: 9,352 lines of Python (excluding tests) and 9,501 lines of tests.
+Source size: 11,097 lines of Python (excluding tests) and 10,145 lines of tests.
 
 ## 6. Configuration reference (keys the code reads)
 
@@ -140,6 +155,7 @@ Source size: 9,352 lines of Python (excluding tests) and 9,501 lines of tests.
 | `control.ffp.enabled` | start the Fractal Flux Pipeline with the server |
 | `vault.storage_path`, `vault.index_plaintext` | vault location and index policy |
 | env `SPARTA_MASTER_KEY`, `SPARTA_VAULT_KEY` | key overrides |
+| env `LOGOS_MODEL_PATH` | location of the Λ-Logos artifact (default `models/logos-v1.npz`) |
 
 At least 60 of the 89 leaf keys in `settings.yaml` are not read by any code. They fall into two groups:
 - **Declarative:** the laws and the NPU/VRAM allocation tables.
@@ -156,7 +172,7 @@ See BACKLOG B-07.
 - Vault: Fernet encryption. Encrypted entries appear in the semantic index only as `[ENCRYPTED]`, and plaintext is never written to disk. The key survives restarts.
 - Thermopylae requires a sustained breach.
 - Air-gap and domain allowlists use exact or subdomain matching.
-- The container ships the embedding model and runs offline (`HF_HUB_OFFLINE=1`).
+- No external model or API: Λ-Logos is trained into the image at build time, so the container needs no network at runtime.
 
 **Known limitations** (tracked in BACKLOG)
 - The vault key is stored beside the ciphertext unless `SPARTA_VAULT_KEY` is set, and the vault uses Fernet (AES-128) rather than AES-256 (B-04).
@@ -188,6 +204,9 @@ See BACKLOG B-07.
 | 20 | `autonomous_audit_agent.py` would overwrite corrected status with its file-length metric | Documents marked `<!-- status:authoritative -->` are skipped unless `--force-doc-update`; 5 tests |
 | 21 | `T_Λ^Hybrid` labelled "harmonic mean" but is half of it; doc examples and Λ-Möbius API example (port, path, auth) wrong | Labels, examples and endpoint docs corrected; formula intent is an open owner decision (B-17) |
 | 22 | Docs described behaviour that did not exist (`start_homeostasis()`, vault env vars, "audit trail complet") | Corrected to match code |
+| 23 | Vault depended on an external pretrained model (HuggingFace download, torch, 5.9 GB), against the air-gap | Replaced by Λ-Logos, our own model; the external backend kept as a lazy opt-in |
+| 24 | 80 of 500 SPARTA concepts were numbered templates ("Epistemic concept N …", confidence 0.97) served as `[VERIFIED]` | Quarantined on load (file untouched, opt-out flag); SPARTA now answers from real concepts |
+| 25 | Project knowledge was scattered prose that could drift silently | `.memory/` graph with executable laws, measured state and hash-chained checkpoints; Mnemosyne in CI |
 | 17 | Shell: test menu ran a non-existent file; unreachable dependency check; 4 ShellCheck findings | Fixed; ShellCheck clean |
 | 18 | `prometheus.yml` used removed `bearer_token`; obsolete Compose `version` | Updated |
 | 19 | README claimed Python 3.8+; current dependencies require ≥ 3.10 | Docs and installer enforce 3.10+ |
@@ -198,11 +217,11 @@ No capability was removed: legacy behaviours are kept as explicit options. Examp
 
 | Type | Count | Role | Requirements honoured |
 |---|---|---|---|
-| Python `.py` | 57 (41 runtime/tools/example, 16 test files) | runtime packages, tests, audit tools, example | ruff-clean, typed signatures, 3.10+ |
-| Markdown `.md` | 32 | vision, specifications, guides, historical audits | authoritative vs historical separated |
+| Python `.py` | 73 (55 runtime/tools/example, 18 under `tests/`) | runtime packages, tests, audit tools, example | ruff-clean, typed signatures, 3.10+ |
+| Markdown `.md` | 44 (incl. 12 in `.memory/`) | memory graph, vision, specifications, guides, historical audits | `.memory/` validated by Mnemosyne; authoritative vs historical separated |
 | Shell `.sh` | 3 | install, activate, coverage | `set -e` correctness, ShellCheck-clean |
 | YAML `.yaml/.yml` | 4 | settings, Prometheus, Compose, CI | parse-validated; keys mapped in §6 |
-| JSONL | 1 (+1 `.backup`) | SPARTA knowledge base (500 concepts; backup = 44-concept phase-1 snapshot) | 16-field schema validated on load |
+| JSONL | 1 (+1 `.backup`) | SPARTA knowledge base (500 concepts, 80 quarantined; backup = 44-concept phase-1 snapshot) | 16-field schema validated on load |
 | Text `.txt` | 2 | `requirements.txt`, `AUDIT_DELIVERABLES.txt` (historical) | — |
 | Docker | `Dockerfile`, `.dockerignore`, Compose | container build and stack | build context excludes secrets |
 | Other | `.gitignore`, `.coveragerc`, `LICENSE`, key template | repository hygiene, MIT licence | `spartan_keys.yaml` and data are git-ignored |
@@ -210,6 +229,10 @@ No capability was removed: legacy behaviours are kept as explicit options. Examp
 **No Rust, C/C++ or JSON configuration files exist in the repository.** The vision does not currently call for them. eBPF monitoring (B-24) would be the first place a C component appears.
 
 ## 10. Document map
+
+**Canonical memory (machine-checked)**
+- [.memory/](.memory/README.md): intention, identity, laws, ontology, decisions, atlas, state,
+  checkpoints, journal, extensions and protocol
 
 **Authoritative (kept in sync with code)**
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)

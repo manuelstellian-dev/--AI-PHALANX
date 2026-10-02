@@ -220,3 +220,49 @@ def test_no_external_ml_runtime_is_imported():
     )
     result = subprocess.run([sys.executable, "-c", code], cwd=REPO_ROOT, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+class TestCommandLine:
+    """`python -m logos` subcommands."""
+
+    def test_info_similar_explain(self, capsys):
+        from logos.__main__ import main
+        assert main(["info"]) == 0
+        assert '"trained": true' in capsys.readouterr().out
+        assert main(["similar", "energy conservation", "conservation of energy"]) == 0
+        assert 0.0 < float(capsys.readouterr().out) <= 1.0
+        assert main(["explain", "0"]) == 0
+        assert len(capsys.readouterr().out.split(", ")) == 10
+
+    def test_train_respects_existing_artifact_and_force(self, tmp_path, capsys, monkeypatch):
+        from logos import runtime
+        from logos.__main__ import main
+        out = tmp_path / "m.npz"
+        out.write_bytes(b"placeholder")
+        assert main(["train", "--out", str(out)]) == 0
+        assert "Artifact exists" in capsys.readouterr().out
+
+        # --force retrains; use a tiny corpus to keep the test fast
+        monkeypatch.setattr(runtime, "build_corpus", lambda root: [(str(i), t) for i, t in enumerate(SMALL_CORPUS)])
+        assert main(["train", "--force", "--out", str(out)]) == 0
+        assert LogosEmbedder.load(str(out)).corpus_size == len(SMALL_CORPUS)
+
+    def test_runtime_trains_when_artifact_missing(self, tmp_path, monkeypatch):
+        from logos import runtime
+        monkeypatch.setenv("LOGOS_MODEL_PATH", str(tmp_path / "fresh.npz"))
+        monkeypatch.setattr(runtime, "build_corpus", lambda root: [(str(i), t) for i, t in enumerate(SMALL_CORPUS)])
+        runtime.reset_model()
+        try:
+            model = runtime.get_model()
+            assert model.is_trained and (tmp_path / "fresh.npz").exists()
+            assert runtime.get_model() is model  # cached
+        finally:
+            runtime.reset_model()
+
+    def test_unwritable_artifact_keeps_model_in_memory(self, tmp_path, monkeypatch):
+        from logos import runtime
+        monkeypatch.setattr(runtime, "build_corpus", lambda root: [(str(i), t) for i, t in enumerate(SMALL_CORPUS)])
+        blocker = tmp_path / "file"
+        blocker.write_text("x")
+        model = runtime.train_default(str(blocker / "sub" / "m.npz"))  # parent is a file -> OSError
+        assert model.is_trained

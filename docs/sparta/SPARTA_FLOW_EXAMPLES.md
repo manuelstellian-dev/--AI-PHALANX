@@ -5,13 +5,18 @@
 > `SpartaRuntime`) and is served at `/api/v1/sparta/{query,concept/{id},stats,integrity}` and through the
 > `sparta_query` command.
 >
-> - **Knowledge base:** `sparta/semantic_memory.jsonl` holds **500 concepts** in **24 domains**, not the
->   specified 445 in 11. The largest domains are Physics 59, Mathematics 49, Epistemology 44,
->   ComputerScience 35, Chemistry 34 and Biology 27. Medicine is not yet present.
+> - **Knowledge base:** `sparta/semantic_memory.jsonl` holds **500 concepts**, not the specified 445.
+>   Of these, **80 are numbered template placeholders** (`epistemic_NN`, `universal_principle_NN`,
+>   `knowledge_mode_NN`). They are quarantined on load and never used for answers (.memory DEC-013).
+>   That leaves **420 active concepts in 22 domains**. The largest domains are Physics 59,
+>   Mathematics 49, ComputerScience 35, Chemistry 34 and Biology 27. Medicine is not yet present.
 > - **Confidence:** every concept lies in [0.95, 1.0], as specified. Because of that, the 0.70/0.80/0.95
 >   thresholds do not discriminate yet (BACKLOG B-03).
-> - **Graph integrity:** 544 relation/prerequisite references point to 99 missing concepts. Most of them are
->   domain names such as `philosophy` or `epistemology` (BACKLOG B-02).
+> - **Graph integrity:** 224 relation or prerequisite references among the active concepts point
+>   to missing concepts. Most are domain names such as `philosophy` (BACKLOG B-02). Before the
+>   quarantine the figure was 544.
+> - **Retrieval model:** Λ-Logos, the project's own embedding model (`logos/`). No external models
+>   are used.
 > - **Hallucination check:** matching is lexical. It verifies that Foundation concepts are mentioned, not that
 >   a claim is consistent with them (BACKLOG B-10).
 > - **Λ-Modules:** not implemented (BACKLOG B-11).

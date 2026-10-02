@@ -4,9 +4,18 @@
 
 ## 5-Minute Quick Start
 
+### 0. Read the project memory (every session)
+
+```bash
+python -m mnemosyne boot     # intention, laws, current state, last checkpoint, next steps
+python -m mnemosyne check    # proves the memory still matches the code
+```
+
 ### 1. Clone and Install
 
-Requires **Python 3.10+** (the installer checks this).
+Requires **Python 3.10+** (the installer checks this). No GPU, no torch, and no external model
+downloads: the embedding model **Λ-Logos** trains locally in about 10 seconds the first time it is
+needed (`python -m logos train`).
 
 ```bash
 # Clone repository

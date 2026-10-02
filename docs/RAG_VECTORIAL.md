@@ -4,14 +4,20 @@
 
 ## 📋 Overview
 
-The RAG (Retrieval-Augmented Generation) Vectorial system provides semantic search capabilities using SentenceTransformer embeddings and cosine similarity. It combines encrypted storage with vector embeddings for secure and intelligent data retrieval.
+The RAG (Retrieval-Augmented Generation) Vectorial system provides semantic search capabilities using **Λ-Logos**, ΛΕΩΝΙΔΑΣ's own embedding model (`logos/`), and cosine similarity. It combines encrypted storage with vector embeddings for secure and intelligent data retrieval.
+
+> **No external model.** Since 2026-10-02 the vault uses no pretrained weights, no HuggingFace
+> downloads and no torch (`.memory/DECISIONS.md` DEC-012, LAW-006). Λ-Logos is trained locally on
+> the project's own corpus.
 
 ## 🏗️ Architecture
 
 ### Components
 
 1. **SpartanVectorStore** (`vault/vector_store.py`)
-   - Embedding generation using SentenceTransformer (all-MiniLM-L6-v2)
+   - Embedding generation with Λ-Logos (`model_name="logos-v1"`, the default)
+   - Records the model ID (`logos-v1:<fingerprint>`) of the stored vectors and flags them as
+     stale after a model change
    - Cosine similarity search
    - In-memory vector storage
    - Persistent storage: `vector_store.json` with embeddings (primary, loaded first);
@@ -330,7 +336,9 @@ Get vault statistics.
   "encryption_enabled": true,
   "vector_stats": {
     "total_entries": 10,
-    "model_name": "all-MiniLM-L6-v2",
+    "model_name": "logos-v1",
+    "model_id": "logos-v1:7ace9ee49387",
+    "stale_embeddings": false,
     "storage_path": "./data/vault/vectors",
     "avg_embedding_norm": 12.5,
     "embedding_dim": 384
@@ -410,17 +418,27 @@ curl -X POST "http://localhost:7300/api/v1/vault/batch-embed" \
 
 ## 📊 Performance Metrics
 
-### Model Specifications
-- **Model:** all-MiniLM-L6-v2
+### Model Specifications (Λ-Logos `logos-v1`)
+- **Method:** signed feature hashing (2¹⁵ buckets) over normalized words, bigrams and character
+  3–5-grams → TF-IDF → randomized SVD (384 latent axes) → L2-normalized vectors
 - **Embedding Dimension:** 384
-- **Max Sequence Length:** 256 tokens
-- **Model Size:** ~80 MB
+- **Max Sequence Length:** unlimited (bag-of-features)
+- **Training corpus:** SPARTA concepts + `.memory/` + documentation (1,948 documents, ~10 s on CPU)
+- **Artifact:** `models/logos-v1.npz`, 23.5 MB, generated and git-ignored (`python -m logos train`)
 
-### Benchmarks (on CPU)
-- **Single Embedding:** ~50ms
-- **Batch (100 texts):** ~2 seconds (~20ms per text)
-- **Search (1000 vectors):** ~5ms
-- **Save to Disk:** ~100ms (1000 entries)
+### Retrieval quality (fixed benchmark: 28 paraphrase queries against 420 concepts)
+| Model | MRR | Recall@1 | Recall@5 | Mean rank |
+|---|---|---|---|---|
+| Λ-Logos (trained) | 0.690 | 57% | 82% | 16.5 |
+| Lexical baseline (untrained) | 0.527 | 43% | 61% | 40 |
+
+Reproduce with `tests/test_logos.py::TestProjectModel` or `logos/benchmark.py`.
+
+### Measured speed (CPU, measured 2026-10-02)
+- **Single embedding:** ~30 ms
+- **Batch (100 texts):** ~0.2 s
+- **Search (1,000 vectors):** ~0.03 ms
+- **Model memory:** ~50 MB (float32 latent axes)
 
 ### Memory Usage
 - **Model:** ~150 MB RAM
@@ -485,18 +503,38 @@ vault:
 # Vault key (recommended in production)
 export SPARTA_VAULT_KEY="<fernet key>"
 
-# Offline model cache (set in the Docker image)
-export HF_HOME=/app/models HF_HUB_OFFLINE=1
+# Λ-Logos artifact location (the Docker image sets /app/models/logos-v1.npz)
+export LOGOS_MODEL_PATH=/path/to/logos-v1.npz
 ```
 
 The model name is a constructor argument (`vector_model`), not an environment variable.
 
-### Custom Model
+### Retraining the model
 
-Use a different SentenceTransformer model:
+The artifact is frozen once it exists, so stored vectors stay comparable. To retrain, for example
+after the corpus has grown:
+
+```bash
+python -m logos train --force      # new fingerprint means a new model ID
+```
+
+Then re-index every vault, since encrypted entries are re-embedded from their decrypted plaintext:
 
 ```python
-vault = SpartanVault(vector_model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+vault.reindex()
+```
+
+The procedure is `.memory/PROTOCOL.md` PRO-006.
+
+### External backend (optional, not recommended)
+
+The previous external backend is preserved as an explicit opt-in (LAW-001). It requires the
+optional package, which is **not** in `requirements.txt`, and violates the project's air-gap
+principle:
+
+```python
+# pip install sentence-transformers
+vault = SpartanVault(vector_model="all-MiniLM-L6-v2")
 ```
 
 ## 📈 Scaling Considerations
@@ -557,8 +595,10 @@ To extend the system:
 
 ## 📚 References
 
-- [SentenceTransformers Documentation](https://www.sbert.net/)
-- [all-MiniLM-L6-v2 Model Card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
+- Λ-Logos source and design: `logos/model.py`, `.memory/ONTOLOGY.md` (ONT-014)
+- [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis)
+- [Halko, Martinsson, Tropp — randomized SVD](https://arxiv.org/abs/0909.4061)
+- [Feature hashing](https://en.wikipedia.org/wiki/Feature_hashing)
 - [Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [RAG Architecture](https://arxiv.org/abs/2005.11401)
 

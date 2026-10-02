@@ -143,7 +143,8 @@ class LogosEmbedder:
         V, S = self._randomized_svd(X, k)
 
         keep = S > 1e-10
-        self.components = V[:, keep]
+        # float32 halves memory; output vectors are float32 anyway
+        self.components = np.ascontiguousarray(V[:, keep], dtype=np.float32)
         self.singular_values = S[keep]
         self.corpus_size = n_docs
         self.fingerprint = self.corpus_fingerprint(texts, self._params())
@@ -269,7 +270,7 @@ class LogosEmbedder:
                 raise ValueError(f"Not a {MODEL_FAMILY} model: {meta.get('family')}")
             model = cls(n_features=meta["n_features"], dim=meta["dim"], seed=meta["seed"],
                         oversample=meta["oversample"], power_iterations=meta["power_iterations"])
-            model.components = data["components"].astype(np.float64)
+            model.components = np.ascontiguousarray(data["components"], dtype=np.float32)
             model.idf = data["idf"].astype(np.float64)
             model.singular_values = data["singular_values"]
         model.fingerprint = meta["fingerprint"]

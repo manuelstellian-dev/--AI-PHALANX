@@ -20,11 +20,14 @@ Proiectul, lansat sub **Licența MIT**, acționează ca un **Nucleu Decizional (
 - ⚡ **Λ-TAS (Timpul Autonom Spartan)**: Auto-reglare inteligentă
 - 🔥 **Protocol Thermopylae**: Auto-distrugere controlată în caz de urgență
 - 📊 **API RESTful**: FastAPI pe port 7300 cu autentificare
-- 🧠 **SPARTA**: Raționament anti-halucinație peste 500 de concepte verificate (`/api/v1/sparta`)
+- 🧠 **SPARTA**: Raționament anti-halucinație peste 420 de concepte verificate active (`/api/v1/sparta`)
 - 🔍 **RAG Vectorial**: Vault criptat cu căutare semantică (`/api/v1/vault`)
+- 🏛️ **Λ-Logos**: Modelul propriu de embedding — antrenat pe corpusul proiectului, fără modele/API externe
+- 🧭 **Memoria proiectului** (`.memory/` + Mnemosyne): graf de cunoaștere validat, cu checkpoint-uri înlănțuite prin hash
 - 🐳 **Docker Ready**: Deployment simplu cu Docker Compose (imagine air-gapped)
 
 > 📌 **Starea reală, verificată a proiectului:** [PROJECT_STATUS.md](PROJECT_STATUS.md) · **Pașii următori:** [BACKLOG.md](BACKLOG.md)
+> 🧭 **Orice sesiune începe cu:** `python -m mnemosyne boot` — memoria canonică a proiectului este în [.memory/](.memory/README.md)
 
 ## Arhitectura Falangei
 
@@ -78,7 +81,7 @@ Orchestratorul principal al sistemului:
 
 ### Cerințe
 
-- Python 3.10+ (dependențele curente `sentence-transformers` / `torch` o cer)
+- Python 3.10+ (dependențele curente `numpy` / `scipy` o cer). **Fără torch și fără modele externe.**
 - pip
 - (Opțional) Docker & Docker Compose
 
@@ -187,7 +190,10 @@ Accesează documentația interactivă Swagger:
 ├── parallel_execution/        # Phalanx-Executor, Task-Scheduler
 ├── vault/                     # SpartanVault + Vector Store (RAG Vectorial)
 ├── sparta/                    # SPARTA Foundation, Bridge, Reflexive Generator, Runtime
-│   └── semantic_memory.jsonl # 500 concepte verificate (16 câmpuri)
+│   └── semantic_memory.jsonl # 500 concepte (420 active, 80 placeholder în carantină)
+├── logos/                     # Λ-Logos — modelul propriu de embedding (NumPy/SciPy)
+├── mnemosyne/                 # Instrumentele memoriei: graf, validare, checkpoint, recall
+├── .memory/                   # Memoria canonică a proiectului (11 fișiere tipizate)
 ├── api/                       # Server FastAPI
 │   ├── server.py             # Server principal (config, auth, lifespan)
 │   └── routes/               # API endpoints
@@ -207,7 +213,7 @@ Accesează documentația interactivă Swagger:
 │   └── generate_keys.py
 ├── docs/                      # Documentație SPARTA, Λ-Möbius, RAG
 ├── data/vault/                # Vault RAG criptat (ignorat în Git)
-├── tests/                     # Suite de teste (563 teste)
+├── tests/                     # Suite de teste (613 teste)
 ├── .github/workflows/ci.yml   # CI: ruff, shellcheck, pytest, build Docker
 ├── docker-compose.yml         # Orchestrare Docker
 ├── Dockerfile                 # Container image
@@ -290,7 +296,18 @@ pytest tests/test_hoplites.py
 # Porțile de calitate rulate și în CI
 ruff check .
 shellcheck scripts/*.sh
+python -m mnemosyne check
 pytest -W error
+```
+
+## Memoria Proiectului și Modelul Propriu
+
+```bash
+python -m mnemosyne boot                 # contextul esențial pentru o sesiune nouă
+python -m mnemosyne check --strict       # memoria este validă și sincronizată cu codul
+python -m mnemosyne query "de ce nu folosim modele externe?"
+python -m logos train                    # antrenează Λ-Logos pe corpusul proiectului
+python -m logos similar "text a" "text b"
 ```
 
 ## Monitorizare
@@ -349,9 +366,11 @@ Acest proiect este licențiat sub **MIT License** - vezi fișierul [LICENSE](LIC
 
 | Gate | Result |
 |------|--------|
-| Tests | **563 passed** (`pytest -W error`, 0 warnings) |
+| Tests | **613 passed** (`pytest -W error`, 0 warnings) |
 | Lint | `ruff` 0 findings · `shellcheck` 0 findings |
-| Coverage | 86% overall · 95% excluding `autonomous_audit_agent.py` (25%, BACKLOG B-01) |
+| Coverage | 87% overall · new `logos/` and `mnemosyne/` ~98% · `autonomous_audit_agent.py` 25% (BACKLOG B-01) |
+| Memory | `mnemosyne check`: 138 entries, 0 errors · hash-chained checkpoints |
+| Sovereignty | No external model or ML runtime (`deps.external_ml_runtime = none`) |
 | CI | GitHub Actions workflow defined (lint, tests, Docker build); first runs got no runner assigned (account Actions setting) |
 
 | Component | Maturity |
@@ -365,7 +384,9 @@ Acest proiect este licențiat sub **MIT License** - vezi fișierul [LICENSE](LIC
 | Control: Fractal Flux Pipeline | ⚠️ Partly simulated (heal/reinvest log only) |
 | Parallel Execution | ✅ Functional |
 | Vault (RAG Vectorial) | ✅ Functional |
-| SPARTA Foundation + API | ✅ Functional (knowledge-graph integrity issues: BACKLOG B-02/B-03) |
+| SPARTA Foundation + API | ✅ Functional (80 placeholders quarantined; graph integrity: BACKLOG B-02/B-03/B-28) |
+| Λ-Logos (own embedding model) | ✅ Functional (benchmark MRR 0.69 vs 0.53 lexical) |
+| Project memory (`.memory/` + Mnemosyne) | ✅ Functional |
 | Λ-Modules (7) | ⏳ Planned — [specification](docs/sparta/SPARTA_LAMBDA_MODULES.md) |
 | PQC, eBPF, Federated mesh, Ledger | ⏳ Planned — [ADVANCED_CAPABILITIES.md](ADVANCED_CAPABILITIES.md) |
 

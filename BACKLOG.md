@@ -24,10 +24,10 @@ Ordering principle: *a fortress is only as strong as its foundation*. SPARTA pro
 - The agent writes its findings to a report instead of editing authoritative docs.
 - Test coverage of the agent is at least 90%.
 
-### B-02 · Repair the SPARTA knowledge graph (544 dangling references)
+### B-02 · Repair the SPARTA knowledge graph (224 dangling references among active concepts)
 **Why.**
-- 210 of 500 concepts reference 99 concepts that do not exist.
-- About 429 of the 544 references use **domain names as concept IDs**: `philosophy` (122), `epistemology` (120), `logic` (61), `cognitive_psychology` (42), and others.
+- Of the 544 dangling references originally measured, 320 came from the 80 quarantined placeholder concepts (B-28).
+- 224 remain among the 420 active concepts. Most use **domain names as concept IDs**, such as `philosophy`, `epistemology`, `logic` and `cognitive_psychology`.
 - `verify_concept`-style prerequisite checks fail on these, and graph traversal silently drops edges. A foundation that "knows what it knows" cannot contain unresolved references.
 
 **Done when:**
@@ -95,7 +95,7 @@ Ordering principle: *a fortress is only as strong as its foundation*. SPARTA pro
 - Prometheus reads its token from `credentials_file`, provisioned from the same secret.
 
 ### B-09 · Reproducible dependencies and a wider CI matrix
-**Why.** The unpinned `sentence-transformers` silently raised the minimum Python version from 3.8 to 3.10. CI verifies only 3.11.
+**Why.** Unpinned dependencies silently raised the minimum Python version from 3.8 to 3.10. That was first `sentence-transformers` (now removed); today numpy and scipy are also unpinned. CI verifies only 3.11.
 
 **Done when:**
 - A lock file (or `pip-compile` output) is committed.
@@ -249,10 +249,36 @@ Ordering principle: *a fortress is only as strong as its foundation*. SPARTA pro
 
 ---
 
+---
+
+## Added in the sovereignty session (2026-10-02)
+
+### B-27 · Λ-Logos v2: stronger semantics, still our own (P1)
+**Why.** Λ-Logos v1 beats the lexical baseline (MRR 0.690 against 0.527), but it is below large
+pretrained transformers, which the project no longer uses (LAW-006). SPARTA's own relations and
+prerequisites are free supervision.
+
+**Done when:**
+- A supervised projection learned from concept relations (for example CCA or a contrastive linear map) beats v1 on the fixed benchmark.
+- The benchmark has grown beyond 28 queries.
+- Vaults are re-indexed after the switch (`.memory` PRO-006).
+
+### B-28 · Replace the 80 quarantined placeholder concepts (P0)
+**Why.**
+- `epistemic_01..40`, `universal_principle_01..20` and `knowledge_mode_01..20` are numbered templates carrying confidence 0.97.
+- They were served as `[VERIFIED]` answers until the quarantine (`.memory` DEC-013).
+- Two whole domains (UniversalPrinciples, ModesOfKnowledge) contain no real knowledge.
+
+**Done when:** the families are replaced with sourced 16-field concepts, or retired by Commander
+decision. The quarantine count then reaches 0.
+
+> The machine-checked form of this backlog is `.memory/EXTENSIONS.md` (EXT-NNN mirrors B-NNN).
+
 ## Dependency summary
 
 ```
-B-02, B-03 ──► B-10 ──► B-11 (Λ-Pattern, Λ-Zero) ──► B-12
+B-28 ──► B-02, B-03 ──► B-10 ──► B-11 (Λ-Pattern, Λ-Zero) ──► B-12
+B-27 ──► B-10 (Λ-Logos retrieval for SPARTA)
 B-14 ──► B-24
 B-04 ──► B-23 ──► B-26
 B-19 ──► B-11 (Λ-Reflect)
