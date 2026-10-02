@@ -1,3 +1,6 @@
+HISTORICAL SNAPSHOT (November 2025) - NOT CURRENT.
+Superseded by PROJECT_STATUS.md (verified state) and BACKLOG.md (next steps).
+
 =============================================================================
 ΛΕΩΝΙΔΑΣ-AI PHALANX - COMPLETE REPOSITORY AUDIT
 Audit Date: 2025-11-02

@@ -1,5 +1,7 @@
 # 🌐 COMPATIBILITY MATRIX - ΛΕΩΝΙΔΑΣ-AI PHALANX
 
+> 🗄️ **Historical snapshot (November 2025) — not current.** Superseded by [PROJECT_STATUS.md](PROJECT_STATUS.md) (verified state) and [BACKLOG.md](BACKLOG.md) (next steps). Completion percentages, test counts and "production ready" verdicts below reflect the state and the estimation methods of that date (the later status reports used a file-length heuristic, see PROJECT_STATUS.md §2) and are kept for the historical record only. Note: current dependencies require **Python ≥ 3.10**; Windows scripts are still planned (BACKLOG B-21).
+
 **Data:** 2025-11-02
 
 ## Platform Compatibility Overview

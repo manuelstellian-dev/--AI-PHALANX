@@ -4,7 +4,7 @@
 Implements the complete Λ-MÖBIUS architecture:
 1. T_Λ^Wrap - Wrapping/Compression layer
 2. T_Λ^Mult - Multiplication/Distribution layer
-3. T_Λ^Hybrid - Harmonic mean of Wrap and Mult
+3. T_Λ^Hybrid - Parallel combination of Wrap and Mult (half their harmonic mean)
 4. T_Λ^Balance - Geometric mean of Wrap and Mult
 5. T_Λ^Supreme - Final supreme temporal metric
 
@@ -41,7 +41,7 @@ class LambdaMetrics:
     Attributes:
         T_wrap: Wrapping/Compression time
         T_mult: Multiplication/Distribution time
-        T_hybrid: Harmonic mean of T_wrap and T_mult
+        T_hybrid: Parallel combination of T_wrap and T_mult (half the harmonic mean)
         T_balance: Geometric mean of T_wrap and T_mult
         T_supreme: Final supreme temporal metric
         state: Current Lambda state
@@ -85,7 +85,7 @@ class LambdaMobiusEngine:
     Implements formulas:
     1. T_Λ^Wrap = T₁ / (1 - 1/(k·P·(1+ln U)))
     2. T_Λ^Mult = (T₁ · ln U) / (1 - 1/(k·P))
-    3. T_Λ^Hybrid = (T_wrap · T_mult) / (T_wrap + T_mult)  [Harmonic mean]
+    3. T_Λ^Hybrid = (T_wrap · T_mult) / (T_wrap + T_mult)  [parallel combination = ½ harmonic mean]
     4. T_Λ^Balance = √(T_wrap · T_mult)  [Geometric mean]
     5. T_Λ^Supreme = Arbiter-selected optimal time
     
@@ -193,7 +193,10 @@ class LambdaMobiusEngine:
     
     def calculate_T_Hybrid(self, T_wrap: float, T_mult: float) -> float:
         """
-        Calculate T_Λ^Hybrid - Harmonic mean of T_wrap and T_mult.
+        Calculate T_Λ^Hybrid - parallel combination of T_wrap and T_mult.
+        
+        Note: (a·b)/(a+b) equals half the harmonic mean 2ab/(a+b); it is always
+        smaller than both inputs. This is the specified formula (see BACKLOG B-17).
         
         Formula: T_Λ^Hybrid = (T_wrap · T_mult) / (T_wrap + T_mult)
         
@@ -202,7 +205,7 @@ class LambdaMobiusEngine:
             T_mult: Multiplication time
             
         Returns:
-            T_hybrid time value (harmonic mean)
+            T_hybrid time value (parallel combination)
         """
         if T_wrap <= 0 or T_mult <= 0:
             logger.warning(f"Invalid inputs for T_Hybrid: T_wrap={T_wrap}, T_mult={T_mult}")

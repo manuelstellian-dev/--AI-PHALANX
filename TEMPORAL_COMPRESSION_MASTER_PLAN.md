@@ -177,6 +177,10 @@ Where:
 Total_Speedup = 10 × 2.38 × 50 × 0.6 = 714x
 ```
 
+> ⚠️ **Status of this derivation (2026-10-02):** the factors above are **assumed**, not measured. The product is
+> a planning model, not an observed result. Measured validation against `PhalanxExecutor` runs is tracked as
+> BACKLOG B-17.
+
 **Time Reduction:**
 ```
 16 weeks = 112 days
@@ -3641,227 +3645,25 @@ Just as King Leonidas and his 300 Spartans held the narrow pass of Thermopylae a
 
 ---
 
-## 📈 IMPLEMENTATION PROGRESS (Auto-Updated)
+## 📈 IMPLEMENTATION PROGRESS
 
-**Last Updated:** 2025-11-04 01:26:34  
-**Audit Agent:** Autonomous Full Repository Scan
+<!-- status:authoritative -->
+**Verified:** 2026-10-02. The authoritative, measured status is maintained in
+[PROJECT_STATUS.md](PROJECT_STATUS.md), and the prioritized next steps in [BACKLOG.md](BACKLOG.md).
+The earlier auto-generated figures here ("77.8% complete") came from a file-length heuristic and are superseded.
 
-### 🎯 Overall Status: 77.8% Complete (35/45 components)
+### Plan vs. reality
 
-```
-Phase 1: Core Infrastructure        [██████████] 100%
-Phase 2: Foundation & Modules       [███████░░░] 70%
-Phase 3: Advanced Features          [░░░░░░░░░░]  0%
-```
+| Plan element | State |
+|---|---|
+| §5.1 Phase 1: Parallelization core (`phalanx_executor`, `task_scheduler`, `kronos_arbiter`) | ✅ Implemented under `parallel_execution/` and `control/` (not `src/`) |
+| §5.2–5.4 Phases 2–4: roadmap parser, task generator, parallel implementer | ❌ Never built; AI-agent pull requests filled this role (BACKLOG B-20) |
+| §6.1 SPARTA Foundation (4 components) | ✅ Implemented, wired to the API and CommandProcessor; knowledge-graph integrity open (B-02, B-03) |
+| §6.2 Λ-Modules (7) | ⏳ Specified, not implemented (B-11) |
+| §6.3 Advanced features (PQC, eBPF, federated learning) | ⏳ Planned (B-23 – B-25) |
+| §1.4 / §7 speedup model (714×, 16 weeks → 2–3 weeks) | ⚠️ **Projection only.** The factors were assumed, not measured. The actual delivery was 19 PRs in 3 calendar days by AI agents, not through these tools. Validation is B-17 |
+| §8.4 Amdahl's Law enforcement | ✅ `KronosArbiter.calculate_metrikos` caps speedup by Amdahl's bound when `amdahl_fraction < 1` |
 
----
+### Quality gates (measured)
 
-### 📊 Component-by-Component Status
-
-#### 🌐 API Routes (93% - 6.5/7 Complete)
-- [x] **server** ([api/server.py](api/server.py)) - FastAPI server with lifespan management (237 lines)
-- [x] **health** ([api/routes/health.py](api/routes/health.py)) - Health checks & survival metrics (92 lines)
-- [x] **command** ([api/routes/command.py](api/routes/command.py)) - Command execution endpoints (160 lines)
-- [x] **metrics** ([api/routes/metrics.py](api/routes/metrics.py)) - Prometheus/JSON metrics (198 lines)
-- [x] **vault** ([api/routes/vault.py](api/routes/vault.py)) - Encrypted vault operations (295 lines)
-- [x] **routes/__init__** ([api/routes/__init__.py](api/routes/__init__.py)) - Route exports (3 lines)
-- [~] **api/__init__** ([api/__init__.py](api/__init__.py)) - Basic package marker (6 lines, minimal)
-
-**Tests:** 33/33 passing ✅
-
----
-
-#### 🛡️ Hoplites Arsenal (100% - 6/6 Complete) ✅
-- [x] **spartanguard** ([hoplites/spartanguard.py](hoplites/spartanguard.py)) - AES-256-GCM encryption (179 lines)
-- [x] **shieldbearer** ([hoplites/shieldbearer.py](hoplites/shieldbearer.py)) - Air-gap enforcement (209 lines)
-- [x] **battleoracle** ([hoplites/battleoracle.py](hoplites/battleoracle.py)) - Risk analysis (226 lines)
-- [x] **weaponmaster** ([hoplites/weaponmaster.py](hoplites/weaponmaster.py)) - External interactions (237 lines)
-- [x] **messenger** ([hoplites/messenger.py](hoplites/messenger.py)) - Secure communications (264 lines)
-- [x] **__init__** ([hoplites/__init__.py](hoplites/__init__.py)) - Complete exports
-
-**Tests:** 85/85 passing ✅  
-**Total Lines:** 1,127
-
----
-
-#### 🏛️ Phalanx Modules (100% - 5/5 Complete) ✅
-- [x] **helot** ([phalanx/helot.py](phalanx/helot.py)) - Resource monitoring (148 lines)
-- [x] **agoge** ([phalanx/agoge.py](phalanx/agoge.py)) - Continuous learning (105 lines)
-- [x] **krypteia** ([phalanx/krypteia.py](phalanx/krypteia.py)) - Threat monitoring (163 lines)
-- [x] **thermopylae** ([phalanx/thermopylae.py](phalanx/thermopylae.py)) - Self-destruct protocol (161 lines)
-- [x] **__init__** ([phalanx/__init__.py](phalanx/__init__.py)) - Module exports
-
-**Tests:** 73/73 passing ✅  
-**Total Lines:** 588
-
----
-
-#### 🎓 SPARTA Foundation (100% - 4/4 Complete) ✅
-- [x] **semantic_foundation** ([sparta/semantic_foundation.py](sparta/semantic_foundation.py)) - Knowledge base (430 lines)
-- [x] **foundation_bridge** ([sparta/foundation_bridge.py](sparta/foundation_bridge.py)) - Λ-TAS integration (440 lines)
-- [x] **reflexive_generator** ([sparta/reflexive_generator.py](sparta/reflexive_generator.py)) - Anti-hallucination (454 lines)
-- [x] **semantic_memory** ([sparta/semantic_memory.jsonl](sparta/semantic_memory.jsonl)) - 100+ concepts (401KB)
-
-**Tests:** 32/32 passing ✅  
-**Total Lines:** 1,347  
-**Documentation:** [SPARTA_FOUNDATION.md](SPARTA_FOUNDATION.md)
-
----
-
-#### 🧠 Core System (100% - 3/3 Complete) ✅
-- [x] **leonidasbrain** ([core/leonidasbrain.py](core/leonidasbrain.py)) - Central orchestrator (200 lines)
-- [x] **commandprocessor** ([core/commandprocessor.py](core/commandprocessor.py)) - Λ-Möbius routing (195 lines)
-- [x] **__init__** ([core/__init__.py](core/__init__.py)) - Module exports (7 lines)
-
-**Tests:** 95/95 passing ✅  
-**Total Lines:** 402
-
----
-
-#### ⚡ Control Systems (100% - 4/4 Complete) ✅
-- [x] **kronos_arbiter** ([control/kronos_arbiter.py](control/kronos_arbiter.py)) - Temporal compression (437 lines)
-- [x] **lambda_mobius** ([control/lambda_mobius.py](control/lambda_mobius.py)) - Λ-Möbius Engine (363 lines)
-- [x] **fractal_pipeline** ([control/fractal_pipeline.py](control/fractal_pipeline.py)) - FFP system (385 lines)
-- [x] **__init__** ([control/__init__.py](control/__init__.py)) - Module exports (8 lines)
-
-**Tests:** 71/71 passing ✅  
-**Total Lines:** 1,201  
-**Documentation:** [LAMBDA_MOBIUS_QUICKSTART.md](docs/LAMBDA_MOBIUS_QUICKSTART.md)
-
----
-
-#### 🔗 Parallel Execution (100% - 3/3 Complete) ✅
-- [x] **phalanx_executor** ([parallel_execution/phalanx_executor.py](parallel_execution/phalanx_executor.py)) - Parallel executor (423 lines)
-- [x] **task_scheduler** ([parallel_execution/task_scheduler.py](parallel_execution/task_scheduler.py)) - Task scheduling (435 lines)
-- [x] **__init__** ([parallel_execution/__init__.py](parallel_execution/__init__.py)) - Complete exports
-
-**Tests:** 47/47 passing ✅  
-**Total Lines:** 873
-
----
-
-#### 🔮 Λ-Modules (0% - 0/7 Complete) ❌
-- [ ] **lambda_identity** - Self-awareness & identity management
-- [ ] **lambda_pattern** - Pattern recognition & learning
-- [ ] **lambda_meta** - Meta-learning capabilities
-- [ ] **lambda_zero** - Initialization & reset
-- [ ] **lambda_reflect** - Self-reflection system
-- [ ] **lambda_affect** - Emotional context analysis
-- [ ] **lambda_guide** - Decision guidance system
-
-**Status:** Documented in SPARTA_FOUNDATION.md, awaiting Phase 3 implementation  
-**Priority:** Medium - Enhancement features  
-**Estimated Effort:** 6-8 weeks
-
----
-
-#### ⚡ Advanced Features (0% - 0/4 Complete) ❌
-- [ ] **spartanguard_pqc** - Post-Quantum Cryptography (Kyber-1024 + Dilithium-5)
-- [ ] **krypteia_ebpf** - eBPF kernel-level monitoring (Linux only)
-- [ ] **mesh_network** - Federated learning P2P mesh
-- [ ] **immutable_ledger** - Blockchain audit trail
-
-**Status:** Documented in ADVANCED_CAPABILITIES.md, awaiting Phase 4 implementation  
-**Priority:** Low - Future-proofing  
-**Estimated Effort:** 13-18 weeks
-
----
-
-### 📦 Additional Systems
-
-#### Vault System (100% Complete) ✅
-- [x] **spartan_vault** ([vault/spartan_vault.py](vault/spartan_vault.py)) - Encrypted storage (209 lines)
-- [x] **vector_store** ([vault/vector_store.py](vault/vector_store.py)) - RAG vectorial (430 lines)
-- [x] **__init__** ([vault/__init__.py](vault/__init__.py)) - Module exports (15 lines)
-
-**Tests:** 13/13 passing ✅  
-**Total Lines:** 654
-
-#### Audit Tools (100% Complete) ✅
-- [x] **audit_analyzer** ([audit_analyzer.py](audit_analyzer.py)) - Code analysis (482 lines)
-- [x] **autonomous_audit_agent** ([autonomous_audit_agent.py](autonomous_audit_agent.py)) - Full system audit (713 lines)
-
-**Tests:** 67/67 passing ✅  
-**Total Lines:** 1,195
-
-#### Scripts & Utilities (100% Complete) ✅
-- [x] **install_sparta.sh** ([scripts/install_sparta.sh](scripts/install_sparta.sh)) - Installation automation
-- [x] **activate_leonidas.sh** ([scripts/activate_leonidas.sh](scripts/activate_leonidas.sh)) - System activation
-- [x] **generate_keys.py** ([scripts/generate_keys.py](scripts/generate_keys.py)) - Cryptographic key generation
-
-**All scripts operational** ✅
-
----
-
-### 🧪 Test Coverage Summary
-
-**Total Tests:** 516 passing ✅  
-**Total Lines of Code:** 17,789  
-**Documentation Files:** 27 markdown files
-
-| Category | Tests | Status |
-|----------|-------|--------|
-| API | 33 | ✅ |
-| Core | 95 | ✅ |
-| Phalanx | 73 | ✅ |
-| Hoplites | 85 | ✅ |
-| SPARTA | 32 | ✅ |
-| Lambda Möbius | 28 | ✅ |
-| Fractal Pipeline | 43 | ✅ |
-| Parallel Execution | 47 | ✅ |
-| Audit Analyzer | 67 | ✅ |
-| Vault & Vector Store | 13 | ✅ |
-
----
-
-### 📅 Implementation Roadmap vs Reality
-
-#### Phase 1: Core Infrastructure ✅ (Target: 100%, Actual: 100%)
-**Status:** FULLY COMPLETE
-
-- [x] Core System (LeondasBrain, CommandProcessor) - 100%
-- [x] Phalanx Modules (Helot, Agoge, Krypteia, Thermopylae) - 100%
-- [x] Hoplites Arsenal (All 6 hoplites) - 100%
-- [x] API Routes (6.5/7 routes) - 93%
-- [x] Control Systems (Kronos, Lambda Möbius, Fractal Pipeline) - 100%
-- [x] Parallel Execution (Phalanx Executor, Task Scheduler) - 100%
-- [x] Vault System (Spartan Vault, Vector Store) - 100%
-- [x] Audit Tools (Audit Analyzer, Autonomous Agent) - 100%
-- [x] Scripts (Installation, Activation, Key Generation) - 100%
-
-#### Phase 2: Foundation & Modules ⚠️ (Target: 100%, Actual: 50%)
-**Status:** PARTIALLY COMPLETE
-
-- [x] SPARTA Foundation (100% - All 4 components) ✅
-- [ ] Λ-Modules (0% - 0/7 modules) ❌
-
-**Gap Analysis:** Λ-Modules are the ONLY gap in Phase 2
-
-#### Phase 3: Advanced Features ❌ (Target: 75%, Actual: 0%)
-**Status:** NOT STARTED
-
-- [ ] Post-Quantum Cryptography (0%)
-- [ ] eBPF Monitoring (0%)
-- [ ] Federated Learning (0%)
-- [ ] Immutable Ledger (0%)
-
-**Gap Analysis:** All advanced features pending
-
----
-
-### 🎯 Recommendations
-
-#### Immediate Actions
-1. ✅ **Core Infrastructure** - Nearly complete, focus on __init__ standardization
-2. ⚠️ **Λ-Modules** - Primary gap, requires 6-8 weeks implementation
-3. ⏳ **Advanced Features** - Low priority, document for Phase 4
-
-#### Success Metrics
-- **Implemented Components:** 28/43 (65.1%)
-- **Test Coverage:** 516 tests passing (100% pass rate)
-- **Documentation:** Complete for all implemented features
-- **Code Quality:** High (all tests passing, comprehensive docs)
-
----
-
-*This section is auto-generated by the Autonomous Audit Agent and updated with each audit run.*
+All tests pass with 0 warnings, ruff and ShellCheck report no findings, and CI covers lint, tests and a Docker build. Exact counts are in PROJECT_STATUS.md §5.

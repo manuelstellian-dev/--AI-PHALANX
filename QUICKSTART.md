@@ -6,6 +6,8 @@
 
 ### 1. Clone and Install
 
+Requires **Python 3.10+** (the installer checks this).
+
 ```bash
 # Clone repository
 git clone https://github.com/manuelstellian-dev/--AI-PHALANX.git
@@ -99,14 +101,26 @@ curl -X POST http://localhost:7300/api/v1/command/analyze-risk \
      }'
 ```
 
-### 3. Check Air-Gap Status
+### 3. Ask SPARTA (verified reasoning)
+
+```bash
+curl -X POST http://localhost:7300/api/v1/sparta/query \
+     -H "Authorization: Bearer SPARTA300_SECRET_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "What is entropy?"}'
+```
+
+The response contains `sources` (concept IDs), `confidence`, `reasoning_chain`,
+`verified` and `epistemic_status`. Unknown topics get an honest "I don't know".
+
+### 4. Check Air-Gap Status
 
 ```bash
 curl -H "Authorization: Bearer SPARTA300_SECRET_TOKEN" \
      http://localhost:7300/api/v1/command/check-airgap
 ```
 
-### 4. Get System Metrics
+### 5. Get System Metrics
 
 ```bash
 curl -H "Authorization: Bearer SPARTA300_SECRET_TOKEN" \
@@ -145,6 +159,11 @@ async def main():
     encrypted = await guard.encrypt("Secret message")
     decrypted = await guard.decrypt(encrypted)
     print(f"Encryption test: {'✅ SUCCESS' if decrypted == 'Secret message' else '❌ FAILED'}")
+    
+    # Verified reasoning with SPARTA (500-concept Foundation)
+    from sparta import get_runtime
+    answer = get_runtime().query("What is entropy?")
+    print(f"SPARTA sources: {answer['sources']}, verified: {answer['verified']}")
 
 asyncio.run(main())
 ```
@@ -157,8 +176,11 @@ asyncio.run(main())
 # Override auth token
 export SPARTA_AUTH_TOKEN="your-secure-token-here"
 
-# Set master key (if not using generated keys)
+# Set master key (if not using generated keys in config/spartan_keys.yaml)
 export SPARTA_MASTER_KEY="your-hex-encoded-key"
+
+# Vault key (otherwise data/vault/encryption.key is created and reused)
+export SPARTA_VAULT_KEY="your-fernet-key"
 ```
 
 ### Configuration File (config/settings.yaml)
@@ -181,7 +203,15 @@ phalanx:
   thermopylae:
     survival_threshold: 0.95
     thermopylae_armed: false  # ⚠️ DANGER: Auto-destruction!
+    consecutive_breaches_required: 3  # sustained breach needed before activation
+
+# Background self-repair cycle
+control:
+  ffp:
+    enabled: true
 ```
+
+Each module reads its own section of this file (`phalanx.*`, `hoplites.*`, `control.*`, `vault.*`).
 
 ## Testing
 
@@ -194,6 +224,9 @@ pytest tests/test_core.py
 
 # Run with coverage
 pytest --cov=. --cov-report=html
+
+# Same quality gates as CI
+ruff check . && shellcheck scripts/*.sh && pytest -W error
 ```
 
 ## Troubleshooting
@@ -242,6 +275,7 @@ Before deploying to production:
 - [ ] Change `auth_token` in `config/settings.yaml`
 - [ ] Set `SPARTA_AUTH_TOKEN` environment variable
 - [ ] Verify `config/spartan_keys.yaml` is NOT in Git
+- [ ] Set `SPARTA_VAULT_KEY` from a secrets store (otherwise the vault key sits beside the data)
 - [ ] Review Air-Gap settings (`airgap_mode`)
 - [ ] Review Thermopylae settings (`thermopylae_armed`)
 - [ ] Review external access settings (`external_access_enabled`)
@@ -255,6 +289,8 @@ Before deploying to production:
 1. **Read the Documentation**
    - [README.md](README.md) - Overview and installation
    - [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed architecture
+   - [PROJECT_STATUS.md](PROJECT_STATUS.md) - Verified state and known limitations
+   - [BACKLOG.md](BACKLOG.md) - Prioritized next steps
    
 2. **Explore the API**
    - Swagger UI: http://localhost:7300/docs

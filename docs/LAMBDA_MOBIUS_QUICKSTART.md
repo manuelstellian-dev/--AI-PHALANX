@@ -46,7 +46,7 @@ print(f"Current state: {state.name} ({state.value})")
 # Full metrics object
 print(f"T_wrap: {metrics.T_wrap:.3f}s")        # Compression time
 print(f"T_mult: {metrics.T_mult:.3f}s")        # Distribution time
-print(f"T_hybrid: {metrics.T_hybrid:.3f}s")    # Harmonic mean
+print(f"T_hybrid: {metrics.T_hybrid:.3f}s")    # Parallel combination (½ harmonic mean)
 print(f"T_balance: {metrics.T_balance:.3f}s")  # Geometric mean
 print(f"T_supreme: {metrics.T_supreme:.3f}s")  # Selected optimal
 ```

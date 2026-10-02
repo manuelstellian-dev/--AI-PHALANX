@@ -171,7 +171,7 @@ class TestLambdaMobiusEngine:
         assert T_mult > 0
     
     def test_calculate_T_Hybrid(self):
-        """Test calculate_T_Hybrid (harmonic mean)."""
+        """Test calculate_T_Hybrid (parallel combination, ½ harmonic mean)."""
         engine = LambdaMobiusEngine(T1=1.0)
         
         T_wrap = 2.0
@@ -179,7 +179,7 @@ class TestLambdaMobiusEngine:
         
         T_hybrid = engine.calculate_T_Hybrid(T_wrap, T_mult)
         
-        # Harmonic mean: (T_wrap · T_mult) / (T_wrap + T_mult)
+        # Parallel combination: (T_wrap · T_mult) / (T_wrap + T_mult)
         expected = (T_wrap * T_mult) / (T_wrap + T_mult)
         
         assert abs(T_hybrid - expected) < 0.001
@@ -534,14 +534,15 @@ class TestFormulasAccuracy:
         assert abs(T_mult - expected) < 0.001
     
     def test_harmonic_mean_accuracy(self):
-        """Verify harmonic mean formula."""
+        """Verify the T_Hybrid formula (half of the harmonic mean)."""
         engine = LambdaMobiusEngine(T1=1.0)
         
         # Use simple values: 2 and 3
         T_hybrid = engine.calculate_T_Hybrid(2.0, 3.0)
         
-        # Harmonic mean of 2 and 3: 2*3/(2+3) = 6/5 = 1.2
+        # 2*3/(2+3) = 6/5 = 1.2 — half of the harmonic mean 2*2*3/(2+3) = 2.4
         assert abs(T_hybrid - 1.2) < 0.001
+        assert abs(2 * T_hybrid - 2.4) < 0.001
     
     def test_geometric_mean_accuracy(self):
         """Verify geometric mean formula."""

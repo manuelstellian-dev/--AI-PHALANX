@@ -1,5 +1,7 @@
 # SPARTA Foundation Documentation
 
+> 🗄️ **Early stub — superseded.** The complete SPARTA Foundation specification is [docs/sparta/SPARTA_FOUNDATION.md](docs/sparta/SPARTA_FOUNDATION.md); the implementation lives in `sparta/` and is exposed at `/api/v1/sparta/*`. Status: [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
 ## Problem
 The SPARTA Foundation addresses pressing issues in AI, including the need for structured frameworks and robust mechanisms to ensure reliable outputs in various applications.
 

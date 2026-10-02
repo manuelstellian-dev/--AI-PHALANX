@@ -1,5 +1,23 @@
 # SPARTA Flow Examples - End-to-End Demonstrations
 
+> 📌 **Implementation reality (verified 2026-10-02)** — this document is the *design specification*.
+> The implemented SPARTA lives in `sparta/` (`SemanticFoundation`, `FoundationBridge`, `ReflexiveGenerator`,
+> `SpartaRuntime`) and is served at `/api/v1/sparta/{query,concept/{id},stats,integrity}` and through the
+> `sparta_query` command.
+>
+> - **Knowledge base:** `sparta/semantic_memory.jsonl` holds **500 concepts** in **24 domains**, not the
+>   specified 445 in 11. The largest domains are Physics 59, Mathematics 49, Epistemology 44,
+>   ComputerScience 35, Chemistry 34 and Biology 27. Medicine is not yet present.
+> - **Confidence:** every concept lies in [0.95, 1.0], as specified. Because of that, the 0.70/0.80/0.95
+>   thresholds do not discriminate yet (BACKLOG B-03).
+> - **Graph integrity:** 544 relation/prerequisite references point to 99 missing concepts. Most of them are
+>   domain names such as `philosophy` or `epistemology` (BACKLOG B-02).
+> - **Hallucination check:** matching is lexical. It verifies that Foundation concepts are mentioned, not that
+>   a claim is consistent with them (BACKLOG B-10).
+> - **Λ-Modules:** not implemented (BACKLOG B-11).
+>
+> The full verified state is in [PROJECT_STATUS.md](../../PROJECT_STATUS.md).
+
 **ΜΟΛΩΝ ΛΑΒΕ** - Demonstrație Completă 🏛️⚡🔥
 
 ## Introducere: Flow-ul Complet SPARTA

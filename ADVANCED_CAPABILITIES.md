@@ -23,6 +23,8 @@ T_new = (T_1 * ln(U + 1)) / (1 - 1 / (k * P))
 
 **Purpose:** This formula allows the system to dynamically adjust its operational rhythm based on available parallel processing capacity and workload volume.
 
+**Implementation:** `LeondasBrain.calculate_lambda_tas` clamps the result to [0.1, 10] seconds. The homeostasis loop sleeps Λ-TAS seconds between iterations. It uses P from Helot's latest measurement and U from `CommandProcessor.calculate_universe_expansion_factor()`.
+
 ### 2. Parallelism Factor (P)
 
 Calculated by the **Helot Module**, P measures the system's hardware capacity to work in parallel:
@@ -126,8 +128,8 @@ This priority structure ensures the system always protects itself and its data b
 **Status:** Prepared for integration (`quantum_resistant: true`)
 
 **Algorithms:**
-- **Kyber**: For key encapsulation
-- **Dilithium**: For digital signatures
+- **Kyber**: For key encapsulation — standardized by NIST as **ML-KEM (FIPS 203)**
+- **Dilithium**: For digital signatures — standardized by NIST as **ML-DSA (FIPS 204)**
 
 **Migration Strategy:**
 - **Encapsulation**: Wrap existing AES-256-GCM with PQC layer
@@ -334,6 +336,10 @@ Data Retention Expired:
 ---
 
 ## VII. Future Roadmap
+
+> ⚠️ **Schedule status (2026-10-02):** the Q1–Q3 2026 targets below have passed without these phases being
+> started. The capabilities remain in scope; current priorities and dependencies are in
+> [BACKLOG.md](BACKLOG.md) (B-23 PQC, B-24 eBPF, B-25 federated mesh, B-26 ledger).
 
 ### Phase 1: Core Enhancements (Current)
 - ✅ Mathematical foundations (Λ-TAS, P, U)

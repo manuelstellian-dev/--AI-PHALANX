@@ -1,7 +1,7 @@
 # ΛΕΩΝΙΔΑΣ-AI PHALANX
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-009688.svg)](https://fastapi.tiangolo.com)
 
 **ΜΟΛΩΝ ΛΑΒΕ (Molon Labe)** - *"Come and Take Them"*
@@ -20,7 +20,11 @@ Proiectul, lansat sub **Licența MIT**, acționează ca un **Nucleu Decizional (
 - ⚡ **Λ-TAS (Timpul Autonom Spartan)**: Auto-reglare inteligentă
 - 🔥 **Protocol Thermopylae**: Auto-distrugere controlată în caz de urgență
 - 📊 **API RESTful**: FastAPI pe port 7300 cu autentificare
-- 🐳 **Docker Ready**: Deployment simplu cu Docker Compose
+- 🧠 **SPARTA**: Raționament anti-halucinație peste 500 de concepte verificate (`/api/v1/sparta`)
+- 🔍 **RAG Vectorial**: Vault criptat cu căutare semantică (`/api/v1/vault`)
+- 🐳 **Docker Ready**: Deployment simplu cu Docker Compose (imagine air-gapped)
+
+> 📌 **Starea reală, verificată a proiectului:** [PROJECT_STATUS.md](PROJECT_STATUS.md) · **Pașii următori:** [BACKLOG.md](BACKLOG.md)
 
 ## Arhitectura Falangei
 
@@ -74,7 +78,7 @@ Orchestratorul principal al sistemului:
 
 ### Cerințe
 
-- Python 3.8+
+- Python 3.10+ (dependențele curente `sentence-transformers` / `torch` o cer)
 - pip
 - (Opțional) Docker & Docker Compose
 
@@ -151,7 +155,20 @@ curl -X POST http://localhost:7300/api/v1/command/encrypt \
 # Verificare Air-Gap
 curl -H "Authorization: Bearer SPARTA300_SECRET_TOKEN" \
      http://localhost:7300/api/v1/command/check-airgap
+
+# Întrebare SPARTA (raționament verificat, fără halucinații)
+curl -X POST http://localhost:7300/api/v1/sparta/query \
+     -H "Authorization: Bearer SPARTA300_SECRET_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "What is energy conservation?"}'
+
+# Integritatea grafului de cunoștințe SPARTA
+curl -H "Authorization: Bearer SPARTA300_SECRET_TOKEN" \
+     http://localhost:7300/api/v1/sparta/integrity
 ```
+
+Toate endpoint-urile, cu excepția `/api/v1/health`, necesită token-ul Bearer
+(inclusiv `/api/v1/vault/*` și `/api/v1/sparta/*`).
 
 ### API Documentation
 
@@ -166,22 +183,32 @@ Accesează documentația interactivă Swagger:
 ├── core/                      # Λ-Core (LeondasBrain, CommandProcessor)
 ├── phalanx/                   # Module interne (Helot, Agoge, Krypteia, Thermopylae)
 ├── hoplites/                  # Arsenal (Guard, Shield, Oracle, Weapon, Messenger)
+├── control/                   # Kronos-Arbiter, Λ-Möbius Engine, Fractal Flux Pipeline
+├── parallel_execution/        # Phalanx-Executor, Task-Scheduler
+├── vault/                     # SpartanVault + Vector Store (RAG Vectorial)
+├── sparta/                    # SPARTA Foundation, Bridge, Reflexive Generator, Runtime
+│   └── semantic_memory.jsonl # 500 concepte verificate (16 câmpuri)
 ├── api/                       # Server FastAPI
-│   ├── server.py             # Server principal
+│   ├── server.py             # Server principal (config, auth, lifespan)
 │   └── routes/               # API endpoints
 │       ├── health.py
 │       ├── command.py
-│       └── metrics.py
+│       ├── metrics.py
+│       ├── vault.py
+│       └── sparta.py
 ├── config/                    # Configurație
-│   ├── settings.yaml         # Configurare principală
+│   ├── settings.yaml         # Configurare principală (secțiune per modul)
 │   ├── spartan_keys.yaml.template
 │   └── prometheus.yml
 ├── scripts/                   # Scripturi de utilitate
 │   ├── install_sparta.sh
 │   ├── activate_leonidas.sh
+│   ├── run_coverage.sh
 │   └── generate_keys.py
-├── data/encrypted_vault/      # Vault criptat (ignorat în Git)
-├── tests/                     # Suite de teste
+├── docs/                      # Documentație SPARTA, Λ-Möbius, RAG
+├── data/vault/                # Vault RAG criptat (ignorat în Git)
+├── tests/                     # Suite de teste (563 teste)
+├── .github/workflows/ci.yml   # CI: ruff, shellcheck, pytest, build Docker
 ├── docker-compose.yml         # Orchestrare Docker
 ├── Dockerfile                 # Container image
 └── requirements.txt           # Dependențe Python
@@ -212,17 +239,31 @@ phalanx:
 python scripts/generate_keys.py
 ```
 
+Spartan Guard încarcă `MASTER_AES_KEY_HEX` din `config/spartan_keys.yaml`
+(sau din variabila `SPARTA_MASTER_KEY`). Fără acest fișier se folosește o cheie
+temporară, iar datele criptate cu ea nu supraviețuiesc unei reporniri.
+
+### Variabile de Mediu
+
+| Variabilă | Rol |
+|-----------|-----|
+| `SPARTA_AUTH_TOKEN` | Token-ul API (are prioritate față de `auth.auth_token`) |
+| `SPARTA_MASTER_KEY` | Cheia master AES-256 în hex (alternativă la `spartan_keys.yaml`) |
+| `SPARTA_VAULT_KEY` | Cheia Fernet a vault-ului (altfel `data/vault/encryption.key`) |
+
 ⚠️ **IMPORTANT**: Fișierul `config/spartan_keys.yaml` conține chei secrete și **NU** trebuie încărcat în Git!
 
 ## Securitate
 
 ### Măsuri de Securitate Implementate
 
-1. **Criptografie**: AES-256-GCM pentru toate datele sensibile
-2. **Autentificare**: Bearer token pentru toate endpoint-urile protejate
-3. **Air-Gap**: Izolare strictă de rețea (configurabilă)
-4. **Protocol Thermopylae**: Auto-distrugere în caz de compromitere
-5. **Audit Logging**: Toate acțiunile sunt loguite
+1. **Criptografie**: AES-256-GCM (Spartan Guard); Fernet pentru vault - intrările criptate apar în indexul semantic doar ca `[ENCRYPTED]`
+2. **Autentificare**: Bearer token (comparație în timp constant) pe toate endpoint-urile în afară de `/health`
+3. **Air-Gap**: Izolare strictă de rețea (configurabilă; traficul loopback local este permis)
+4. **Protocol Thermopylae**: Auto-distrugere după `consecutive_breaches_required` verificări critice consecutive
+5. **Logging**: Acțiunile sunt loguite în `logs/` (audit log dedicat: vezi BACKLOG B-07, B-26)
+
+Limitările cunoscute sunt listate în [PROJECT_STATUS.md §7](PROJECT_STATUS.md#7-security-model-and-known-limitations).
 
 ### Best Practices
 
@@ -245,6 +286,11 @@ pytest --cov=. --cov-report=html
 pytest tests/test_core.py
 pytest tests/test_phalanx.py
 pytest tests/test_hoplites.py
+
+# Porțile de calitate rulate și în CI
+ruff check .
+shellcheck scripts/*.sh
+pytest -W error
 ```
 
 ## Monitorizare
@@ -298,145 +344,30 @@ Acest proiect este licențiat sub **MIT License** - vezi fișierul [LICENSE](LIC
 
 ## Implementation Status
 
-**Overall Progress:** 77.8% (35/45 components)
+<!-- status:authoritative -->
+**Verified 2026-10-02.** Full detail: [PROJECT_STATUS.md](PROJECT_STATUS.md). Next steps: [BACKLOG.md](BACKLOG.md).
 
-| Category | Status | Progress |
-|----------|--------|----------|
-| **API Routes** | 🔄 | `█████████░` 93% |
-| **Hoplites Arsenal** | ✅ | `██████████` 100% |
-| **Phalanx Modules** | ✅ | `██████████` 100% |
-| **SPARTA Foundation** | ✅ | `██████████` 100% |
-| **Core System** | ✅ | `██████████` 100% |
-| **Control Systems** | ✅ | `██████████` 100% |
-| **Parallel Execution** | ✅ | `██████████` 100% |
-| **Vault System** | ✅ | `██████████` 100% |
-| **Audit Tools** | ✅ | `██████████` 100% |
-| **Scripts** | ✅ | `██████████` 100% |
-| **Λ-Modules** | ⏳ | `░░░░░░░░░░` 0% |
-| **Advanced Features** | ⏳ | `░░░░░░░░░░` 0% |
+| Gate | Result |
+|------|--------|
+| Tests | **563 passed** (`pytest -W error`, 0 warnings) |
+| Lint | `ruff` 0 findings · `shellcheck` 0 findings |
+| Coverage | 86% overall · 95% excluding `autonomous_audit_agent.py` (25%, BACKLOG B-01) |
+| CI | GitHub Actions: lint, tests, Docker build + health check |
 
-### 📋 Detailed Feature Status
+| Component | Maturity |
+|-----------|----------|
+| Λ-Core (LeondasBrain, CommandProcessor) | ✅ Functional |
+| Phalanx: Helot, Thermopylae | ✅ Functional |
+| Phalanx: Agoge, Krypteia | ⚠️ Simulated (random / placeholder logic) |
+| Hoplites: Spartan Guard, Shield Bearer, Messenger | ✅ Functional |
+| Hoplites: Battle Oracle, Weapon Master | ⚠️ Simulated |
+| Control: Kronos-Arbiter, Λ-Möbius | ✅ Functional (models not yet validated by benchmark) |
+| Control: Fractal Flux Pipeline | ⚠️ Partly simulated (heal/reinvest log only) |
+| Parallel Execution | ✅ Functional |
+| Vault (RAG Vectorial) | ✅ Functional |
+| SPARTA Foundation + API | ✅ Functional (knowledge-graph integrity issues: BACKLOG B-02/B-03) |
+| Λ-Modules (7) | ⏳ Planned — [specification](docs/sparta/SPARTA_LAMBDA_MODULES.md) |
+| PQC, eBPF, Federated mesh, Ledger | ⏳ Planned — [ADVANCED_CAPABILITIES.md](ADVANCED_CAPABILITIES.md) |
 
-#### 🌐 API Routes (93% Complete)
-- [x] [FastAPI Server](./api/server.py) - Main API server with lifespan management (237 lines)
-- [x] [Health Endpoints](./api/routes/health.py) - System health checks and survival metrics (92 lines)
-- [x] [Command Endpoints](./api/routes/command.py) - Tactical command execution (160 lines)
-- [x] [Metrics Endpoints](./api/routes/metrics.py) - Prometheus/JSON metrics export (198 lines)
-- [x] [Vault Endpoints](./api/routes/vault.py) - Encrypted vault operations (295 lines)
-- [x] [API Routes Init](./api/routes/__init__.py) - Route exports (3 lines)
-- [~] [API Init](./api/__init__.py) - Basic package marker (6 lines, minimal)
-
-**Tests:** [test_api.py](./tests/test_api.py) - 33 passing tests ✅
-
-#### 🛡️ Hoplites Arsenal (100% Complete)
-- [x] [Spartan Guard](./hoplites/spartanguard.py) - AES-256-GCM encryption
-- [x] [Shield Bearer](./hoplites/shieldbearer.py) - Air-gap enforcement
-- [x] [Battle Oracle](./hoplites/battleoracle.py) - Risk analysis & Monte Carlo
-- [x] [Weapon Master](./hoplites/weaponmaster.py) - External interactions
-- [x] [Messenger](./hoplites/messenger.py) - Secure communications
-- [x] [Hoplites Init](./hoplites/__init__.py) - Arsenal exports
-
-**Tests:** [test_hoplites.py](./tests/test_hoplites.py) - 85 passing tests
-
-#### 🏛️ Phalanx Modules (100% Complete)
-- [x] [Helot Module](./phalanx/helot.py) - Resource monitoring (CPU/RAM/GPU/NPU)
-- [x] [Agoge Module](./phalanx/agoge.py) - Continuous learning system
-- [x] [Krypteia Module](./phalanx/krypteia.py) - Silent threat monitoring
-- [x] [Thermopylae Module](./phalanx/thermopylae.py) - Self-destruct protocol
-- [x] [Phalanx Init](./phalanx/__init__.py) - Internal control exports
-
-**Tests:** [test_phalanx.py](./tests/test_phalanx.py) - 73 passing tests
-
-#### 🎓 SPARTA Foundation (100% Complete)
-- [x] [Semantic Foundation](./sparta/semantic_foundation.py) - 3-layer knowledge architecture
-- [x] [Foundation Bridge](./sparta/foundation_bridge.py) - Integration with Λ-TAS & Vault
-- [x] [Reflexive Generator](./sparta/reflexive_generator.py) - Anti-hallucination responses
-- [x] [Semantic Memory](./sparta/semantic_memory.jsonl) - 100+ verified concepts (401KB)
-
-**Tests:** [test_sparta.py](./tests/test_sparta.py) - 32 passing tests  
-**Documentation:** [SPARTA_FOUNDATION.md](./SPARTA_FOUNDATION.md)
-
-#### 🧠 Core System (100% Complete) ✅
-- [x] [Leonidas Brain](./core/leonidasbrain.py) - Central orchestrator with homeostasis (200 lines)
-- [x] [Command Processor](./core/commandprocessor.py) - Λ-Möbius command routing (195 lines)
-- [x] [Core Init](./core/__init__.py) - Module exports (7 lines)
-
-**Tests:** [test_core.py](./tests/test_core.py) - 95 passing tests ✅
-
-#### ⚡ Control Systems (100% Complete) ✅
-- [x] [Kronos Arbiter](./control/kronos_arbiter.py) - Temporal compression engine (437 lines)
-- [x] [Lambda Möbius](./control/lambda_mobius.py) - Λ-Möbius Engine with state tracking (363 lines)
-- [x] [Fractal Pipeline](./control/fractal_pipeline.py) - Fractal Flow Processing (FFP) (385 lines)
-- [x] [Control Init](./control/__init__.py) - Module exports (8 lines)
-
-**Tests:** [test_lambda_mobius.py](./tests/test_lambda_mobius.py) + [test_fractal_pipeline.py](./tests/test_fractal_pipeline.py) - 71 passing tests ✅  
-**Documentation:** [LAMBDA_MOBIUS_QUICKSTART.md](./docs/LAMBDA_MOBIUS_QUICKSTART.md)
-
-#### 🔗 Parallel Execution (100% Complete)
-- [x] [Phalanx Executor](./parallel_execution/phalanx_executor.py) - ProcessPool-based parallel execution
-- [x] [Task Scheduler](./parallel_execution/task_scheduler.py) - Dependency-aware scheduling
-- [x] [Parallel Execution Init](./parallel_execution/__init__.py) - Complete exports
-
-**Tests:** [test_supreme_parallel.py](./tests/test_supreme_parallel.py) - 47 passing tests
-
-#### 🔮 Λ-Modules (0% Complete) - **PLANNED**
-- [ ] Lambda Identity - Self-awareness and identity management
-- [ ] Lambda Pattern - Pattern recognition and learning
-- [ ] Lambda Meta - Meta-learning capabilities
-- [ ] Lambda Zero - Initialization and reset
-- [ ] Lambda Reflect - Self-reflection system
-- [ ] Lambda Affect - Emotional context
-- [ ] Lambda Guide - Decision guidance
-
-**Status:** Documented in [SPARTA_FOUNDATION.md](./SPARTA_FOUNDATION.md), not yet implemented  
-**Priority:** Medium - Enhancement features for Phase 3
-
-#### ⚡ Advanced Features (0% Complete) - **PLANNED**
-- [ ] Post-Quantum Cryptography (PQC) - Kyber-1024 + Dilithium-5
-- [ ] eBPF Monitoring - Kernel-level threat detection (Linux only)
-- [ ] Federated Learning - P2P gradient sharing mesh
-- [ ] Immutable Ledger - Blockchain audit trail
-
-**Status:** Documented in [ADVANCED_CAPABILITIES.md](./ADVANCED_CAPABILITIES.md), not yet implemented  
-**Priority:** Low - Future-proofing for Phase 4
-
-### 🧪 Test Coverage
-
-**Total Tests:** 516 passing ✅
-
-| Module | Tests | Status |
-|--------|-------|--------|
-| API | 33 | ✅ |
-| Core | 95 | ✅ |
-| Phalanx | 73 | ✅ |
-| Hoplites | 85 | ✅ |
-| SPARTA | 32 | ✅ |
-| Lambda Möbius | 28 | ✅ |
-| Fractal Pipeline | 43 | ✅ |
-| Parallel Execution | 47 | ✅ |
-| Audit Analyzer | 67 | ✅ |
-| Vector Store | 13 | ✅ |
-
-**Documentation:** [TEST_COVERAGE.md](./TEST_COVERAGE.md)
-
-### 📦 Vault System (100% Complete) ✅
-- [x] [Spartan Vault](./vault/spartan_vault.py) - AES-256-GCM encrypted storage (209 lines)
-- [x] [Vector Store](./vault/vector_store.py) - RAG vectorial with sentence-transformers (430 lines)
-- [x] [Vault Init](./vault/__init__.py) - Module exports (15 lines)
-
-**Tests:** [test_vector_store.py](./tests/test_vector_store.py) - 13 passing tests ✅
-
-### 🔍 Audit & Analysis Tools (100% Complete) ✅
-- [x] [Audit Analyzer](./audit_analyzer.py) - Repository code analysis (482 lines)
-- [x] [Autonomous Audit Agent](./autonomous_audit_agent.py) - Full system audit with doc updates (713 lines)
-
-**Tests:** [test_audit_analyzer.py](./tests/test_audit_analyzer.py) - 67 passing tests ✅
-
-### 🛠️ Scripts & Utilities (100% Complete) ✅
-- [x] [install_sparta.sh](./scripts/install_sparta.sh) - Automated installation script
-- [x] [activate_leonidas.sh](./scripts/activate_leonidas.sh) - System activation script
-- [x] [generate_keys.py](./scripts/generate_keys.py) - Cryptographic key generation
-
-**All scripts operational and tested** ✅
-
-*Last updated: 2025-11-04 02:00:00 (Full Repository Audit)*
+> Earlier status figures ("77.8% complete", "PRODUCTION READY") were produced by a file-length heuristic
+> and are superseded; see PROJECT_STATUS.md §2.

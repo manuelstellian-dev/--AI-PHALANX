@@ -11,7 +11,10 @@
 **Priority:** Medium - Enhancement features for Phase 3  
 **Estimated Effort:** 6-8 weeks for complete implementation
 
-**Verified:** 2025-11-04 - Full Repository Deep Scan
+**Verified:** 2026-10-02. Still not implemented. Integration points are ready:
+`ReflexiveGenerator.generate_with_reflection` carries TODO hooks for Λ-Identity, Λ-Pattern and Λ-Meta,
+and `sparta/runtime.py::SpartaRuntime.query` is the single entry point where the "Flow complet" pipeline
+(below) should be assembled. Plan and order: [BACKLOG.md](../../BACKLOG.md) B-11.
 
 ---
 

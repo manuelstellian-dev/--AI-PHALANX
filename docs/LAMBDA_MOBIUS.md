@@ -52,7 +52,7 @@ Complete metrics container:
 class LambdaMetrics:
     T_wrap: float        # Wrapping/Compression time
     T_mult: float        # Multiplication/Distribution time
-    T_hybrid: float      # Harmonic mean of T_wrap and T_mult
+    T_hybrid: float      # Parallel combination (½ harmonic mean) of T_wrap and T_mult
     T_balance: float     # Geometric mean of T_wrap and T_mult
     T_supreme: float     # Final supreme temporal metric
     state: LambdaState   # Current Lambda state
@@ -110,29 +110,31 @@ T_Λ^Mult = (T₁ · ln U) / (1 - 1/(k·P))
 **Example:**
 ```python
 T_mult = engine.calculate_T_Mult(k=100, P=4, U=10)
-# Result: ~2.305 seconds (detailed analysis)
+# Result: ~2.308 seconds (detailed analysis)
 ```
 
-### Layer 3: T_Λ^Hybrid (Harmonic Mean)
+### Layer 3: T_Λ^Hybrid (Parallel Combination)
 
 **Formula:**
 ```
 T_Λ^Hybrid = (T_wrap · T_mult) / (T_wrap + T_mult)
 ```
 
-**Purpose:** Balances between speed and accuracy using harmonic mean
+**Purpose:** Combines both times like parallel resistors: `(a·b)/(a+b)`.
+This equals **half the harmonic mean** `2ab/(a+b)` and is always smaller than both inputs.
+(Earlier revisions called it "the harmonic mean"; whether the true harmonic mean was intended is an open design question — BACKLOG B-17.)
 
 **When Used:** In STEADY state for balanced operation
 
 **Properties:**
-- Always less than or equal to arithmetic mean
+- Always smaller than both T_wrap and T_mult (min(a,b)/2 ≤ T_hybrid < min(a,b))
 - Favors smaller values (more conservative)
 - Ideal for steady-state operation
 
 **Example:**
 ```python
 T_hybrid = engine.calculate_T_Hybrid(T_wrap=1.5, T_mult=2.0)
-# Result: 1.714 seconds (balanced)
+# Result: ~0.857 seconds = (1.5·2.0)/(1.5+2.0)
 ```
 
 ### Layer 4: T_Λ^Balance (Geometric Mean)
@@ -166,7 +168,7 @@ if state == LambdaState.WRAP:
 elif state == LambdaState.UNWRAP:
     T_supreme = T_mult        # Use distribution time
 else:  # STEADY
-    T_supreme = T_hybrid      # Use harmonic mean
+    T_supreme = T_hybrid      # Use parallel combination
 ```
 
 ---
@@ -185,6 +187,12 @@ def arbiter_select(k: int, P: int, U: int) -> LambdaState:
     3. Else: STEADY (balanced operation)
     """
 ```
+
+> **Operational note (verified 2026-10-02):** the API endpoint and the Fractal Flux Pipeline call the
+> arbiter with `k = 100` and `P = n_cores ≥ 1`. Then `k·P·(1+ln U) > 100` holds for every `U > 1`,
+> so these callers always select **WRAP**. UNWRAP is reachable only when `k·P·(1+ln U) ≤ 100`
+> while `U > 1000`, which requires a small `k` (for example `k=1, P=1, U=2000`, as in the tests).
+> Calibrating these thresholds against measured runs is BACKLOG B-17.
 
 ### State Selection Examples
 
@@ -302,11 +310,11 @@ metrics = engine.calculate_T_Supreme(k=100, P=4, U=10)
 
 ## API Endpoints
 
-### GET /lambda-mobius
+### GET /api/v1/lambda-mobius
 
 Get complete Λ-MÖBIUS Engine metrics.
 
-**Authentication:** Required (token parameter)
+**Authentication:** Required (`Authorization: Bearer <token>` header)
 
 **Response:**
 ```json
@@ -342,7 +350,8 @@ Get complete Λ-MÖBIUS Engine metrics.
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:8000/lambda-mobius?token=YOUR_TOKEN"
+curl -X GET "http://localhost:7300/api/v1/lambda-mobius" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN"
 ```
 
 **Python Example:**
@@ -350,8 +359,8 @@ curl -X GET "http://localhost:8000/lambda-mobius?token=YOUR_TOKEN"
 import requests
 
 response = requests.get(
-    "http://localhost:8000/lambda-mobius",
-    params={"token": "YOUR_TOKEN"}
+    "http://localhost:7300/api/v1/lambda-mobius",
+    headers={"Authorization": "Bearer YOUR_TOKEN"}
 )
 
 data = response.json()

@@ -14,17 +14,20 @@ The RAG (Retrieval-Augmented Generation) Vectorial system provides semantic sear
    - Embedding generation using SentenceTransformer (all-MiniLM-L6-v2)
    - Cosine similarity search
    - In-memory vector storage
-   - Persistent storage (pickle + JSON)
+   - Persistent storage: `vector_store.json` with embeddings (primary, loaded first);
+     `vector_store.pkl` still written for compatibility but only read as a fallback
    - Batch processing support
 
 2. **SpartanVault** (`vault/spartan_vault.py`)
-   - AES-256 encryption for sensitive data
+   - Fernet authenticated encryption (AES-128-CBC + HMAC-SHA256) for sensitive data
+   - Encrypted entries are indexed by embedding only: the index stores `[ENCRYPTED]`
+     instead of plaintext (`index_plaintext=True` restores the legacy behaviour)
    - Integration with SpartanVectorStore
    - Hybrid search (exact + semantic)
    - Encrypted data persistence
 
 3. **REST API** (`api/routes/vault.py`)
-   - 8 REST endpoints for vault operations
+   - 8 REST endpoints for vault operations, **all requiring the Bearer token**
    - FastAPI-based with Pydantic validation
    - Comprehensive error handling
 
@@ -32,12 +35,12 @@ The RAG (Retrieval-Augmented Generation) Vectorial system provides semantic sear
 
 ```
 Input Text
-    ↓
-[Encryption] → Encrypted Storage
-    ↓
-[Embedding] → Vector Store (384-dim vectors)
-    ↓
-[Cosine Similarity] → Search Results
+    ├─► [Encryption] → Encrypted Storage (encrypted.json)
+    └─► [Embedding]  → Vector Store (384-dim vectors, text = "[ENCRYPTED]")
+                          ↓
+                 [Cosine Similarity] → Search Results
+                          ↓
+                 decrypt=true → plaintext restored from Encrypted Storage
 ```
 
 ## 🚀 Quick Start
@@ -137,6 +140,7 @@ Generate embedding vector for text.
 **cURL:**
 ```bash
 curl -X POST "http://localhost:7300/api/v1/vault/embed" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"text": "Python programming"}'
 ```
@@ -171,6 +175,7 @@ Store data with encryption and embedding.
 **cURL:**
 ```bash
 curl -X POST "http://localhost:7300/api/v1/vault/store-with-embedding" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "id": "doc1",
@@ -215,6 +220,7 @@ Search by semantic similarity.
 **cURL:**
 ```bash
 curl -X POST "http://localhost:7300/api/v1/vault/search" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "programming languages",
@@ -267,6 +273,7 @@ Combine exact ID matches with semantic search.
 **cURL:**
 ```bash
 curl -X POST "http://localhost:7300/api/v1/vault/hybrid-search" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "programming",
@@ -304,7 +311,8 @@ Find entries similar to a given entry.
 
 **cURL:**
 ```bash
-curl -X GET "http://localhost:7300/api/v1/vault/similar/doc1?top_k=5"
+curl -X GET "http://localhost:7300/api/v1/vault/similar/doc1?top_k=5" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN"
 ```
 
 ### 6. Get Statistics
@@ -332,7 +340,8 @@ Get vault statistics.
 
 **cURL:**
 ```bash
-curl -X GET "http://localhost:7300/api/v1/vault/stats"
+curl -X GET "http://localhost:7300/api/v1/vault/stats" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN"
 ```
 
 ### 7. Save to Disk
@@ -355,7 +364,8 @@ Persist vault to disk.
 
 **cURL:**
 ```bash
-curl -X POST "http://localhost:7300/api/v1/vault/save"
+curl -X POST "http://localhost:7300/api/v1/vault/save" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN"
 ```
 
 ### 8. Batch Embedding
@@ -391,6 +401,7 @@ Generate embeddings for multiple texts.
 **cURL:**
 ```bash
 curl -X POST "http://localhost:7300/api/v1/vault/batch-embed" \
+  -H "Authorization: Bearer $SPARTA_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "texts": ["First text", "Second text", "Third text"]
@@ -419,17 +430,22 @@ curl -X POST "http://localhost:7300/api/v1/vault/batch-embed" \
 ## 🔒 Security Features
 
 ### Encryption
-- **Algorithm:** AES-256 (Fernet)
-- **Key Generation:** Cryptographically secure random
-- **Key Storage:** Separate encryption.key file
-- **Data:** Encrypted at rest
+- **Algorithm:** Fernet (AES-128-CBC + HMAC-SHA256). Migration to AES-256-GCM via Spartan Guard is tracked in BACKLOG B-04
+- **Key resolution:** `SPARTA_VAULT_KEY` (environment) → `<storage_path>/encryption.key` → newly generated key, persisted on save with `0600` permissions. Saved data therefore stays readable after a restart
+- **Index:** encrypted entries keep only `[ENCRYPTED]` in the semantic index and on disk; plaintext is returned only with `decrypt=true`
+- **Persistence:** JSON is loaded first, so a tampered pickle is never unpickled when JSON exists
+- **Access control:** every `/api/v1/vault/*` endpoint requires the Bearer token
+
+### Known limitations
+- Without `SPARTA_VAULT_KEY`, the key file sits beside the ciphertext. This protects against index leaks but not against full-disk compromise
+- Embeddings of encrypted entries remain in the index, so semantic similarity can leak (B-04)
+- Thermopylae destroys `data/vault` together with its key (`phalanx.thermopylae.vault_path`)
 
 ### Best Practices
-1. Store encryption keys securely (not in version control)
-2. Use environment variables for sensitive data
-3. Implement access control on API endpoints
-4. Regular backups of encrypted data
-5. Rotate encryption keys periodically
+1. Provide `SPARTA_VAULT_KEY` from a secrets store in production
+2. Never commit `data/` (it is git-ignored)
+3. Back up encrypted data together with its key
+4. Rotate keys periodically (re-encryption tooling: B-04)
 
 ## 🧪 Testing
 
@@ -446,28 +462,34 @@ pytest tests/test_vector_store.py::TestSpartanVectorStore -v
 pytest tests/test_vector_store.py --cov=vault --cov-report=html
 ```
 
-Test coverage: **50+ tests** covering:
+Test coverage: **67 tests** in `tests/test_vector_store.py` (plus vault-related checks in `tests/test_system_integrity.py`) covering:
 - Embedding generation
 - Vector storage operations
 - Similarity search
 - Persistence
-- API endpoints
+- API endpoints and authentication
+- Redaction, key persistence and JSON-first loading
 - Error handling
 
 ## 🛠️ Configuration
 
-### Environment Variables
+### settings.yaml and environment
+
+```yaml
+vault:
+  storage_path: "data/vault"   # relative to the repository root
+  index_plaintext: false       # keep "[ENCRYPTED]" in the index for encrypted entries
+```
 
 ```bash
-# Storage path
-export VAULT_STORAGE_PATH="./data/vault"
+# Vault key (recommended in production)
+export SPARTA_VAULT_KEY="<fernet key>"
 
-# Model selection
-export VECTOR_MODEL="all-MiniLM-L6-v2"
-
-# API settings
-export VAULT_API_TIMEOUT=30
+# Offline model cache (set in the Docker image)
+export HF_HOME=/app/models HF_HUB_OFFLINE=1
 ```
+
+The model name is a constructor argument (`vector_model`), not an environment variable.
 
 ### Custom Model
 

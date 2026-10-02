@@ -52,6 +52,11 @@ class FeatureStatus:
     percentage: float
     components: List[Component] = field(default_factory=list)
 
+# Documents carrying this marker hold verified status maintained by hand
+# (see PROJECT_STATUS.md); the agent's file-length heuristic must not overwrite them.
+AUTHORITATIVE_MARKER = "<!-- status:authoritative -->"
+
+
 class AutonomousAuditAgent:
     """
     Fully autonomous audit agent for ΛΕΩΝΙΔΑΣ-AI PHALANX
@@ -59,8 +64,10 @@ class AutonomousAuditAgent:
     Scans, analyzes, correlates, and updates documentation automatically.
     """
     
-    def __init__(self, repo_path: str = "."):
+    def __init__(self, repo_path: str = ".", force_doc_update: bool = False):
         self.repo_path = Path(repo_path).resolve()
+        # True = overwrite documents even if they carry AUTHORITATIVE_MARKER
+        self.force_doc_update = force_doc_update
         self.scan_results = {
             'timestamp': datetime.now().isoformat(),
             'repository': str(self.repo_path),
@@ -564,6 +571,23 @@ class AutonomousAuditAgent:
         self._update_readme()
         self._update_master_plan()
     
+    def _is_protected(self, content: str, name: str) -> bool:
+        """
+        Check whether a document is marked authoritative and must not be rewritten.
+        
+        Args:
+            content: Document content
+            name: Document name (for the message)
+            
+        Returns:
+            True if the update must be skipped
+        """
+        if AUTHORITATIVE_MARKER in content and not self.force_doc_update:
+            print(f"   🛡️  {name} holds authoritative status (PROJECT_STATUS.md) - not overwritten "
+                  f"(use --force-doc-update to override)")
+            return True
+        return False
+    
     def _update_readme(self):
         """Update README.md with implementation status"""
         readme_path = self.repo_path / 'README.md'
@@ -574,6 +598,9 @@ class AutonomousAuditAgent:
         try:
             with open(readme_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+            
+            if self._is_protected(content, 'README.md'):
+                return
             
             # Find implementation status section or add one
             status_marker = "## Implementation Status"
@@ -639,6 +666,9 @@ class AutonomousAuditAgent:
         try:
             with open(master_plan_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+            
+            if self._is_protected(content, 'TEMPORAL_COMPRESSION_MASTER_PLAN.md'):
+                return
             
             # Add progress section at the end
             progress_section = [
@@ -730,11 +760,16 @@ def main():
         default='.',
         help='Repository path (default: current directory)'
     )
+    parser.add_argument(
+        '--force-doc-update',
+        action='store_true',
+        help='Overwrite documents marked as authoritative (not recommended)'
+    )
     
     args = parser.parse_args()
     
     # Run audit
-    agent = AutonomousAuditAgent(args.repo)
+    agent = AutonomousAuditAgent(args.repo, force_doc_update=args.force_doc_update)
     agent.run_full_audit()
     agent.print_summary()
     

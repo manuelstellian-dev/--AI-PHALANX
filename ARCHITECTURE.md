@@ -40,9 +40,12 @@
 │  • Calculare Λ-TAS (Timpul Autonom Spartan)                    │
 │  • Monitorizare probabilitate supraviețuire                    │
 │                                                                 │
-│  Formula Λ-TAS: Λ-TAS = P / (1 + U)                           │
-│    P = Paralelism (număr nucleuri)                             │
-│    U = Workload (volum sarcini)                                │
+│  Formula Λ-TAS (secunde, pentru k·P > 1):                      │
+│    Λ-TAS = T₁·ln(U+1) / (1 − 1/(k·P)),  T₁=1s, k=100           │
+│    limitat la [0.1, 10] s; fallback P/(1+U) dacă k·P ≤ 1        │
+│    P = Factor de paralelism măsurat de Helot                   │
+│    U = Factor de expansiune calculat de CommandProcessor       │
+│  Bucla doarme Λ-TAS secunde între iterații.                    │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -64,6 +67,7 @@
 │    - check_airgap   : Verificare Air-Gap (Shield)             │
 │    - send_message   : Mesaj securizat (Messenger)             │
 │    - train_agoge    : Micro-antrenament (Agoge)               │
+│    - sparta_query   : Raționament verificat (SPARTA)          │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -91,7 +95,9 @@
 │   - CPU: 95%                                                 │
 │   - Memory: 90%                                              │
 │   - Disk: 95%                                                │
-│ • Update interval: 5 secunde                                 │
+│ • Factor paralelism P → Λ-TAS (ultima citire: last_resources)│
+│ • Eșantionare CPU în thread (nu blochează bucla async)       │
+│ • Interval: dictat de Λ-TAS (monitoring_interval_sec: B-07)  │
 └───────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────┐
@@ -101,7 +107,7 @@
 │ • Factor de adaptare: [0.5, 2.0]                            │
 │ • Learning rate: 0.01                                        │
 │ • Furnizează adaptare pentru Λ-Möbius Engine                │
-│ • Training interval: 60 secunde                              │
+│ • ⚠️ Simulat: performanța este aleatoare (BACKLOG B-12)      │
 └───────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────┐
@@ -111,18 +117,21 @@
 │ • Detectare amenințări în timp real                         │
 │ • Nivele amenințare: low, medium, high, critical            │
 │ • Monitoring interval: 5 secunde                             │
-│ • Ajustare probabilitate supraviețuire                       │
+│ • ⚠️ Detectoarele (rețea/procese/fișiere) sunt placeholder   │
+│   - amenințările se raportează manual (BACKLOG B-14)         │
 └───────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────┐
 │ 🔥 THERMOPYLAE MODULE - Protocol Urgență                     │
 ├───────────────────────────────────────────────────────────────┤
 │ • Prag critic: 95% probabilitate supraviețuire              │
+│ • Declanșare: consecutive_breaches_required (3) verificări  │
+│   consecutive sub prag - un vârf izolat nu declanșează      │
 │ • Auto-distrugere controlată (IREVERSIBILĂ!)                │
 │ • Acțiuni la activare:                                       │
-│   1. Ștergere chei criptografice                            │
-│   2. Distrugere vault criptat                               │
-│   3. Suprascrie cu date random                              │
+│   1. Suprascrie fișierul de chei cu date random, apoi șterge│
+│   2. Distruge toate căile vault (data/vault,                │
+│      data/encrypted_vault)                                   │
 │ • Status: ARMED / DISARMED                                   │
 │ ⚠️ PERICOL: Activare doar în situații critice!              │
 └───────────────────────────────────────────────────────────────┘
@@ -155,10 +164,13 @@ The Fractal Flux Pipeline is fully integrated into the LeondasBrain core:
 
 ### Methods
 
-- `start_ffp()`: Start FFP Pipeline in background
+- `start_ffp()`: Run the FFP loop (awaits until stopped)
 - `get_ffp_status()`: Get current FFP status
 - `stop_ffp()`: Stop FFP Pipeline
-- `start_homeostasis()`: Start both homeostasis + FFP in parallel
+
+The API server starts FFP automatically in its lifespan when `control.ffp.enabled: true`
+(default in `config/settings.yaml`) and stops it on shutdown. HEAL and REINVEST currently
+only log their actions (BACKLOG B-15).
 
 ### Usage
 
@@ -168,9 +180,8 @@ from core.leonidasbrain import LeondasBrain
 # Initialize
 brain = LeondasBrain(config)
 
-# FFP is automatically initialized
-# To start it:
-await brain.start_ffp()
+# FFP is automatically initialized; run it as a background task
+task = asyncio.create_task(brain.start_ffp())
 
 # Check status
 status = brain.get_ffp_status()
@@ -259,17 +270,18 @@ brain.stop_ffp()
 │                       FastAPI + Uvicorn                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  Autentificare: Bearer Token                                   │
-│  Token: SPARTA300_SECRET_TOKEN (schimbă în producție!)         │
+│  Autentificare: Bearer Token (comparație în timp constant)     │
+│  Sursă: SPARTA_AUTH_TOKEN > auth.auth_token > implicit         │
+│  Implicit: SPARTA300_SECRET_TOKEN (avertisment la pornire!)    │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                               │
           ┌───────────────────┼───────────────────┐
           ▼                   ▼                   ▼
-    ┌──────────┐       ┌──────────┐       ┌──────────┐
-    │  HEALTH  │       │ COMMAND  │       │ METRICS  │
-    │  Routes  │       │  Routes  │       │  Routes  │
-    └──────────┘       └──────────┘       └──────────┘
+    ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+    │  HEALTH  │  │ COMMAND  │  │ METRICS  │  │  VAULT   │  │  SPARTA  │
+    │  Routes  │  │  Routes  │  │  Routes  │  │  Routes  │  │  Routes  │
+    └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
 
 ┌───────────────────────────────────────────────────────────────┐
 │ HEALTH ROUTES                                                 │
@@ -292,8 +304,9 @@ brain.stop_ffp()
 ┌───────────────────────────────────────────────────────────────┐
 │ METRICS ROUTES                                                │
 ├───────────────────────────────────────────────────────────────┤
-│ GET  /api/v1/metrics             : Prometheus format (auth)  │
+│ GET  /api/v1/metrics             : Prometheus text (auth)    │
 │ GET  /api/v1/metrics/json        : JSON format (auth)        │
+│ GET  /api/v1/lambda-mobius       : Metrici Λ-Möbius (auth)   │
 │                                                               │
 │ Metrici expuse:                                               │
 │  • leonidas_survival_probability                              │
@@ -303,6 +316,25 @@ brain.stop_ffp()
 │  • leonidas_adaptation_factor                                 │
 │  • leonidas_threats_detected                                  │
 │  • leonidas_messages_sent                                     │
+└───────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────┐
+│ VAULT ROUTES (toate cu auth)                                  │
+├───────────────────────────────────────────────────────────────┤
+│ POST /api/v1/vault/embed | /batch-embed  : Embeddings         │
+│ POST /api/v1/vault/store-with-embedding  : Stocare criptată   │
+│ POST /api/v1/vault/search | /hybrid-search: Căutare semantică │
+│ GET  /api/v1/vault/similar/{id}          : Intrări similare   │
+│ GET  /api/v1/vault/stats  POST /save     : Statistici/persist │
+└───────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────┐
+│ SPARTA ROUTES (toate cu auth)                                 │
+├───────────────────────────────────────────────────────────────┤
+│ POST /api/v1/sparta/query          : Răspuns verificat        │
+│ GET  /api/v1/sparta/concept/{id}   : Concept (16 câmpuri)     │
+│ GET  /api/v1/sparta/stats          : Statistici Foundation    │
+│ GET  /api/v1/sparta/integrity      : Referințe lipsă în graf  │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -317,10 +349,10 @@ brain.stop_ffp()
          │    └─ ΛΕΩΝΙΔΑΣ-AI main service
          │
          ├──► redis-fortress (Port 6379)
-         │    └─ Cache de memorie
+         │    └─ Cache de memorie (REZERVAT - nefolosit încă, B-19)
          │
          ├──► postgres-armory (Port 5432)
-         │    └─ Bază de date persistentă
+         │    └─ Bază de date persistentă (REZERVAT - nefolosit încă, B-19)
          │
          ├──► prometheus-monitor (Port 9090)
          │    └─ Colectare metrici
@@ -342,7 +374,9 @@ Volumes: redis-data, postgres-data, prometheus-data, grafana-data
 ┌───────────────────────────────────────────────────────────────┐
 │ STRAT 1: Criptografie                                         │
 ├───────────────────────────────────────────────────────────────┤
-│ • AES-256-GCM pentru toate datele sensibile                   │
+│ • AES-256-GCM (Spartan Guard), cheie master din              │
+│   config/spartan_keys.yaml sau SPARTA_MASTER_KEY              │
+│ • Vault: Fernet; indexul semantic ține doar "[ENCRYPTED]"     │
 │ • Chei generate securizat (256-bit random)                    │
 │ • Nonce unic pentru fiecare operație                          │
 │ • SHA-256 pentru hash și integritate                          │
@@ -351,8 +385,9 @@ Volumes: redis-data, postgres-data, prometheus-data, grafana-data
 ┌───────────────────────────────────────────────────────────────┐
 │ STRAT 2: Autentificare                                        │
 ├───────────────────────────────────────────────────────────────┤
-│ • Bearer token pentru toate endpoint-urile protejate          │
-│ • Token configurat în settings.yaml sau environment           │
+│ • Bearer token pe toate endpoint-urile în afară de /health    │
+│ • Token din SPARTA_AUTH_TOKEN sau auth.auth_token             │
+│ • Comparație în timp constant; token-ul nu este logat         │
 │ • Validare la fiecare request                                 │
 └───────────────────────────────────────────────────────────────┘
 
@@ -360,7 +395,7 @@ Volumes: redis-data, postgres-data, prometheus-data, grafana-data
 │ STRAT 3: Air-Gap                                              │
 ├───────────────────────────────────────────────────────────────┤
 │ • Izolare strictă de rețea (default)                          │
-│ • Verificare conexiuni active                                 │
+│ • Verificare conexiuni active (loopback-ul local e permis)    │
 │ • Firewall enforcement                                        │
 └───────────────────────────────────────────────────────────────┘
 
@@ -369,14 +404,14 @@ Volumes: redis-data, postgres-data, prometheus-data, grafana-data
 ├───────────────────────────────────────────────────────────────┤
 │ • Auto-distrugere în caz de compromitere                      │
 │ • Ștergere ireversibilă chei și vault                         │
-│ • Trigger la < 95% probabilitate supraviețuire               │
+│ • Trigger la < 95% supraviețuire, susținut N verificări      │
 └───────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────┐
 │ STRAT 5: Audit și Logging                                     │
 ├───────────────────────────────────────────────────────────────┤
 │ • Loguri structurate (Loguru)                                 │
-│ • Audit trail complet                                         │
+│ • Audit trail dedicat: planificat (BACKLOG B-07, B-26)        │
 │ • Rotație automată (100 MB)                                   │
 │ • Retenție 10 zile                                            │
 └───────────────────────────────────────────────────────────────┘
@@ -445,47 +480,11 @@ Volumes: redis-data, postgres-data, prometheus-data, grafana-data
 
 ---
 
-## 📊 Implementation Status (Verified from Repository)
+## 📊 Implementation Status
 
-**Last Updated:** 2025-11-04 02:00:00  
-**Scan Type:** Full Repository Deep Analysis
-
-### Overall Statistics
-- **Total Implementation:** 77.8% (41/52.5 components)
-- **Python Files:** 53 implementation + 14 test files
-- **Lines of Code:** 17,842 lines
-- **Classes:** 139 classes
-- **Functions:** 884 functions
-- **Tests:** 516 passing ✅
-
-### Component Status
-
-| Component | Files | Lines | Classes | Functions | Status |
-|-----------|-------|-------|---------|-----------|--------|
-| **API Routes** | 7 | 998 | 14 | 26 | 🔄 93% |
-| **Core System** | 3 | 405 | 2 | 21 | ✅ 100% |
-| **Phalanx Modules** | 5 | 593 | 4 | 34 | ✅ 100% |
-| **Hoplites Arsenal** | 6 | 1,133 | 5 | 44 | ✅ 100% |
-| **Control Systems** | 4 | 1,197 | 7 | 35 | ✅ 100% |
-| **Parallel Execution** | 3 | 876 | 6 | 33 | ✅ 100% |
-| **SPARTA Foundation** | 4 | 1,351 | 3 | 28 | ✅ 100% |
-| **Vault System** | 3 | 772 | 3 | 32 | ✅ 100% |
-| **Audit Tools** | 2 | 1,231 | 4 | 29 | ✅ 100% |
-| **Scripts** | 1 | 147 | 0 | 5 | ✅ 100% |
-| **Lambda Modules** | 0 | 0 | 0 | 0 | ❌ 0% |
-| **Advanced Features** | 0 | 0 | 0 | 0 | ❌ 0% |
-
-### Test Coverage
-- **Test Files:** 14 files
-- **Test Lines:** 8,984 lines
-- **Test Classes:** 91 classes
-- **Test Functions:** 596 functions
-- **Tests Passing:** 516 ✅
-
-### Configuration & Scripts
-- **Configuration Files:** 6 (YAML, Docker, JSONL data)
-- **Shell Scripts:** 3 (install, activate, coverage)
-- **Documentation:** 30 markdown files (591 KB)
+The verified, measured status (component maturity, quality gates, remediation log) is maintained in
+**[PROJECT_STATUS.md](PROJECT_STATUS.md)**; the prioritized next steps are in **[BACKLOG.md](BACKLOG.md)**.
+This document describes the architecture only, so that status numbers live in exactly one place.
 
 ---
 
