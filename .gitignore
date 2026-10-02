@@ -215,3 +215,6 @@ data/vault/
 data/vault/**
 logs/
 *.log
+
+# Λ-Logos: artefactul modelului este generat local (python -m logos train)
+models/

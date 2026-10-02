@@ -9,14 +9,13 @@ LABEL version="0.1.0"
 LABEL description="Nucleu Decizional AI cu Arhitectură Spartană"
 
 # Set environment
-# PIP_EXTRA_INDEX_URL: roți PyTorch doar-CPU (fără ~GB de biblioteci CUDA)
-# HF_HUB_OFFLINE: modelul de embedding este inclus în imagine - fără rețea la runtime (Air-Gap)
+# Λ-Logos (modelul propriu) este antrenat la build din corpusul proiectului:
+# fără modele externe, fără descărcări la runtime (Air-Gap)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu \
-    HF_HOME=/app/models
+    LOGOS_MODEL_PATH=/app/models/logos-v1.npz
 
 # Create app directory
 WORKDIR /app
@@ -32,10 +31,6 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download the RAG embedding model at build time
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-ENV HF_HUB_OFFLINE=1
-
 # Copy application code (toate pachetele importate de api.server)
 COPY core/ ./core/
 COPY control/ ./control/
@@ -44,9 +39,18 @@ COPY phalanx/ ./phalanx/
 COPY hoplites/ ./hoplites/
 COPY vault/ ./vault/
 COPY sparta/ ./sparta/
+COPY logos/ ./logos/
 COPY api/ ./api/
 COPY config/ ./config/
 COPY scripts/ ./scripts/
+
+# Corpusul Λ-Logos: memoria proiectului + documentația (sursă de cunoaștere, nu cod)
+COPY .memory/ ./.memory/
+COPY docs/ ./docs/
+COPY *.md ./
+
+# Antrenează Λ-Logos o singură dată; artefactul (amprentat) este înghețat în imagine
+RUN python -m logos train --out /app/models/logos-v1.npz
 
 # Create necessary directories
 RUN mkdir -p /app/data/vault /app/data/encrypted_vault /app/logs

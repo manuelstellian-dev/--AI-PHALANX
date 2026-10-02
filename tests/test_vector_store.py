@@ -125,7 +125,7 @@ class TestSpartanVectorStore:
     def test_vector_store_initialization(self, temp_storage):
         """Test vector store initialization."""
         store = SpartanVectorStore(storage_path=temp_storage)
-        assert store.model_name == 'all-MiniLM-L6-v2'
+        assert store.model_name == 'logos-v1'  # own model is the default
         assert store.storage_path == temp_storage
         assert len(store.entries) == 0
     
@@ -135,7 +135,7 @@ class TestSpartanVectorStore:
         embedding = vector_store.embed_text(text)
         
         assert isinstance(embedding, np.ndarray)
-        assert len(embedding) == 384  # all-MiniLM-L6-v2 dimension
+        assert len(embedding) == 384  # Λ-Logos default dimension
         assert embedding.dtype == np.float32
     
     def test_embed_batch(self, vector_store):
@@ -331,7 +331,7 @@ class TestSpartanVectorStore:
         """Test getting statistics."""
         stats = vector_store.get_stats()
         assert stats['total_entries'] == 0
-        assert stats['model_name'] == 'all-MiniLM-L6-v2'
+        assert stats['model_name'] == 'logos-v1'
         
         vector_store.add_entry(id="doc1", text="Test document")
         stats = vector_store.get_stats()

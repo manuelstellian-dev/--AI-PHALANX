@@ -9,7 +9,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 from loguru import logger
 from cryptography.fernet import Fernet
-from .vector_store import SpartanVectorStore
+from .vector_store import SpartanVectorStore, DEFAULT_MODEL_NAME
 
 
 # Marker kept in the semantic index in place of plaintext for encrypted entries
@@ -31,7 +31,7 @@ class SpartanVault:
     
     def __init__(self, encryption_key: Optional[bytes] = None, 
                  storage_path: str = './data/vault',
-                 vector_model: str = 'all-MiniLM-L6-v2',
+                 vector_model: str = DEFAULT_MODEL_NAME,
                  index_plaintext: bool = False):
         """
         Initialize the Spartan Vault.
@@ -42,7 +42,7 @@ class SpartanVault:
                 only generated when neither exists (so saved data stays readable
                 across restarts)
             storage_path: Path for persistent storage
-            vector_model: SentenceTransformer model name
+            vector_model: Embedding model ('logos-v1' = own model, default)
             index_plaintext: Keep plaintext of encrypted entries in the semantic
                 index (legacy behaviour). Default False: index holds REDACTED_TEXT
         """
@@ -310,6 +310,26 @@ class SpartanVault:
             output.append(result_dict)
         
         return output
+    
+    def reindex(self) -> int:
+        """
+        Re-embed every entry with the current model (after a Λ-Logos retrain).
+        
+        Encrypted entries are re-embedded from their decrypted plaintext, which
+        never leaves memory; the index keeps only the redaction marker.
+        
+        Returns:
+            Number of entries re-embedded
+        """
+        texts: Dict[str, str] = {}
+        for entry in self.vector_store.get_all_entries():
+            if entry.id in self.encrypted_storage:
+                plaintext = self.retrieve(entry.id)
+                if plaintext is not None:
+                    texts[entry.id] = plaintext
+            else:
+                texts[entry.id] = entry.text
+        return self.vector_store.reembed(texts)
     
     def delete(self, id: str) -> bool:
         """

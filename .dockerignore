@@ -12,4 +12,5 @@ venv
 .venv
 data
 logs
+models
 config/spartan_keys.yaml

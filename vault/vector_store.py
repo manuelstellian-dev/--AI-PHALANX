@@ -1,6 +1,6 @@
 """
 SpartanVectorStore - RAG Vectorial Implementation
-Semantic search with SentenceTransformer embeddings and cosine similarity
+Semantic search with Λ-Logos embeddings (ΛΕΩΝΙΔΑΣ's own model) and cosine similarity
 """
 
 import os
@@ -11,7 +11,44 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from loguru import logger
-from sentence_transformers import SentenceTransformer
+
+from logos import MODEL_FAMILY as LOGOS_FAMILY, get_model as get_logos_model
+
+# External backend (optional, NOT installed by default - see .memory/DECISIONS.md
+# DEC-012). Kept as an explicit opt-in; imported lazily, only when an external
+# model is requested, so the default path never loads torch.
+SentenceTransformer = None  # resolved on demand (tests may patch it)
+
+
+def _external_backend_class():
+    """Return the optional SentenceTransformer class, importing it on demand."""
+    if SentenceTransformer is not None:
+        return SentenceTransformer
+    try:
+        from sentence_transformers import SentenceTransformer as backend
+    except ImportError as e:
+        raise RuntimeError(
+            "External embedding model requested, but the optional 'sentence-transformers' "
+            "package is not installed. ΛΕΩΝΙΔΑΣ uses its own model by default "
+            "(model_name='logos-v1')."
+        ) from e
+    return backend
+
+# Default embedding model: Λ-Logos, trained on the project's own corpus
+DEFAULT_MODEL_NAME = LOGOS_FAMILY
+
+
+class _LogosBackend:
+    """Adapter exposing Λ-Logos through the encode() interface used below."""
+    
+    def __init__(self):
+        self.model = get_logos_model()
+        self.model_id = self.model.model_id
+    
+    def encode(self, texts, convert_to_numpy=True, show_progress_bar=False):
+        if isinstance(texts, str):
+            return self.model.embed(texts)
+        return self.model.embed_batch(texts)
 
 
 @dataclass
@@ -45,25 +82,30 @@ class SpartanVectorStore:
     SPARTAN VECTOR STORE - RAG Vectorial System
     
     Features:
-    - SentenceTransformer embeddings (all-MiniLM-L6-v2)
+    - Λ-Logos embeddings (own model, 384-dim, no network); optional external backend
     - Cosine similarity search
     - Persistent storage (JSON with embeddings; legacy pickle read as fallback)
     - Batch processing
     - CRUD operations
     """
     
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', storage_path: str = './data/vector_store'):
+    def __init__(self, model_name: str = DEFAULT_MODEL_NAME, storage_path: str = './data/vector_store'):
         """
         Initialize the Spartan Vector Store.
         
         Args:
-            model_name: SentenceTransformer model name
+            model_name: 'logos-v1' (default, own model) or the name of an external
+                SentenceTransformer model (requires the optional package)
             storage_path: Path for persistent storage
         """
         self.model_name = model_name
         self.storage_path = storage_path
         self.entries: Dict[str, VectorEntry] = {}
-        self.model: Optional[SentenceTransformer] = None
+        self.model: Optional[Any] = None
+        # Identity of the model that produced the stored vectors
+        self.model_id: Optional[str] = None
+        self.stored_model_id: Optional[str] = None
+        self.stale_embeddings = False
         
         # Create storage directory
         os.makedirs(storage_path, exist_ok=True)
@@ -74,11 +116,27 @@ class SpartanVectorStore:
         self._load_from_disk()
     
     def _init_model(self):
-        """Lazy initialization of the model."""
-        if self.model is None:
-            logger.info(f"⚡ Loading SentenceTransformer model: {self.model_name}")
-            self.model = SentenceTransformer(self.model_name)
-            logger.info("✅ Model loaded successfully")
+        """Lazy initialization of the embedding model."""
+        if self.model is not None:
+            return
+        
+        if self.model_name.startswith(LOGOS_FAMILY):
+            logger.info("⚡ Loading Λ-Logos (own model)")
+            self.model = _LogosBackend()
+            self.model_id = self.model.model_id
+        else:
+            backend = _external_backend_class()
+            logger.warning(f"⚠️ Loading EXTERNAL model: {self.model_name} (opt-in)")
+            self.model = backend(self.model_name)
+            self.model_id = f"external:{self.model_name}"
+        logger.info(f"✅ Embedding model ready: {self.model_id}")
+        
+        if self.stored_model_id and self.entries and self.stored_model_id != self.model_id:
+            self.stale_embeddings = True
+            logger.warning(
+                f"⚠️ Stored vectors come from {self.stored_model_id}, current model is "
+                f"{self.model_id}: similarity is not meaningful until re-indexed"
+            )
     
     def embed_text(self, text: str) -> np.ndarray:
         """
@@ -228,6 +286,28 @@ class SpartanVectorStore:
         logger.info(f"🔄 Updated entry: {id}")
         return entry
     
+    def reembed(self, texts: Dict[str, str]) -> int:
+        """
+        Recompute embeddings with the current model (after a model change).
+        
+        Args:
+            texts: entry id -> source text to embed (the stored text may be a
+                redaction marker, so the caller supplies the real text)
+        
+        Returns:
+            Number of entries re-embedded
+        """
+        self._init_model()
+        ids = [i for i in texts if i in self.entries]
+        if ids:
+            vectors = self.embed_batch([texts[i] for i in ids])
+            for entry_id, vector in zip(ids, vectors):
+                self.entries[entry_id].embedding = vector
+        self.stale_embeddings = False
+        self.stored_model_id = self.model_id
+        logger.info(f"🔄 Re-embedded {len(ids)} entries with {self.model_id}")
+        return len(ids)
+    
     def cosine_similarity(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """
         Calculate cosine similarity between two vectors.
@@ -345,6 +425,7 @@ class SpartanVectorStore:
             return {
                 'total_entries': 0,
                 'model_name': self.model_name,
+                'model_id': self.model_id,
                 'storage_path': self.storage_path
             }
         
@@ -355,6 +436,8 @@ class SpartanVectorStore:
         return {
             'total_entries': len(self.entries),
             'model_name': self.model_name,
+            'model_id': self.model_id or self.stored_model_id,
+            'stale_embeddings': self.stale_embeddings,
             'storage_path': self.storage_path,
             'avg_embedding_norm': avg_norm,
             'embedding_dim': len(embeddings[0]) if embeddings else 0
@@ -378,6 +461,7 @@ class SpartanVectorStore:
             json_path = os.path.join(self.storage_path, 'vector_store.json')
             json_data = {
                 'model_name': self.model_name,
+                'model_id': self.model_id or self.stored_model_id,
                 'format_version': 2,
                 'entries': [entry.to_dict() for entry in self.entries.values()]
             }
@@ -404,6 +488,7 @@ class SpartanVectorStore:
                 with open(json_path, 'r', encoding='utf-8') as f:
                     json_data = json.load(f)
                 raw_entries = json_data.get('entries', [])
+                self.stored_model_id = json_data.get('model_id')
                 if all('embedding' in e for e in raw_entries):
                     self.entries = {
                         e['id']: VectorEntry.from_dict(dict(e)) for e in raw_entries

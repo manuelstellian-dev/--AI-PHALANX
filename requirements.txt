@@ -31,10 +31,12 @@ httpx==0.25.2
 black==23.11.0
 ruff==0.1.6
 
-# RAG Vectorial
-# Notă: versiunile curente sentence-transformers / torch necesită Python >= 3.10
-sentence-transformers>=2.2.0
-numpy>=1.24  # folosit direct de vault/vector_store.py
+# RAG Vectorial + Λ-Logos (modelul propriu de embedding - fără modele externe)
+# Notă: versiunile curente numpy / scipy necesită Python >= 3.10
+numpy>=1.24
+scipy>=1.10  # matrici rare + algebră liniară pentru Λ-Logos
+# Backend extern OPȚIONAL (nu este instalat implicit, vezi .memory/DECISIONS.md DEC-012):
+#   pip install sentence-transformers   și model_name='all-MiniLM-L6-v2'
 
 # SPARTA Foundation - Graph-based knowledge management
 networkx>=3.0

@@ -363,7 +363,8 @@ class TestSpartaIntegration:
     def test_runtime_is_shared_and_loaded(self):
         runtime = get_runtime()
         assert runtime is get_runtime()
-        assert len(runtime.foundation.concepts) >= 500
+        assert len(runtime.foundation.concepts) == 420
+        assert len(runtime.foundation.quarantined) == 80
 
     def test_known_query_is_grounded(self):
         result = get_runtime().query("What is energy conservation?")
@@ -387,6 +388,33 @@ class TestSpartaIntegration:
         assert report['dangling_reference_count'] == 2
         assert report['healthy'] is False
 
+    def test_placeholders_never_answer_as_verified(self):
+        """Template placeholders must not be served as [VERIFIED] knowledge."""
+        runtime = get_runtime()
+        for query in ('epistemic concept concerning knowledge justification belief',
+                      'mode of knowledge epistemological approach',
+                      'universal principle applicable across domains and contexts'):
+            result = runtime.query(query)
+            assert not any(s in runtime.foundation.quarantined for s in result['sources']), query
+            assert 'Epistemic Concept 1' not in result['response']
+    
+    def test_placeholder_detection_rules(self):
+        foundation = SemanticFoundation()
+        base = {k: '' for k in ('subdomain', 'topic', 'formal_statement', 'source', 'reflex_tag',
+                                'verification', 'uncertainty')}
+        base.update({'domain': 'Test', 'confidence': 0.9, 'examples': [], 'counterexamples': [],
+                     'applications': [], 'relations': [], 'prerequisites': []})
+        for i in range(1, 4):
+            foundation.add_concept({**base, 'id': f'filler_{i:02d}', 'definition': f'Filler concept {i} about things'})
+        # Two numbered concepts with distinct definitions are real knowledge
+        foundation.add_concept({**base, 'id': 'law_01', 'definition': 'First law of motion'})
+        foundation.add_concept({**base, 'id': 'law_02', 'definition': 'Second law: F = m a'})
+        
+        assert foundation.find_placeholder_concepts() == ['filler_01', 'filler_02', 'filler_03']
+        assert foundation.quarantine_placeholder_concepts() == 3
+        assert set(foundation.concepts) == {'law_01', 'law_02'}
+        assert foundation.get_integrity_report()['quarantined_placeholders'] == 3
+    
     @pytest.mark.asyncio
     async def test_sparta_api_requires_auth(self):
         async with AsyncClient(app=app, base_url='http://test') as client:
@@ -409,7 +437,7 @@ class TestSpartaIntegration:
         assert 'energy_conservation' in query.json()['sources']
         assert concept.status_code == 200 and concept.json()['id'] == 'entropy'
         assert missing.status_code == 404
-        assert stats.json()['total_concepts'] >= 500
+        assert stats.json()['total_concepts'] == 420
         assert 'dangling_reference_count' in integrity.json()
         assert empty.status_code == 422
 

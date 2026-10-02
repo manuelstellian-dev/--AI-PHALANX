@@ -32,9 +32,20 @@ class TestSemanticFoundation:
         
         if os.path.exists(memory_path):
             count = foundation.load_memory(memory_path)
-            assert count == 500  # Should load 500 concepts (Phase 1 + Phase 2 + Phase 3 + Phase 4)
-            assert len(foundation.concepts) == 500
-            assert len(foundation.domains) >= 24  # At least 24 domains
+            # 500 concepts on disk (Phase 1-4); 80 numbered template placeholders
+            # (epistemic_NN, universal_principle_NN, knowledge_mode_NN) are quarantined
+            assert count == 420
+            assert len(foundation.concepts) == 420
+            assert len(foundation.quarantined) == 80
+            assert len(foundation.concepts) + len(foundation.quarantined) == 500
+            assert len(foundation.domains) >= 22
+
+    def test_load_memory_without_quarantine_keeps_all(self):
+        """quarantine_placeholders=False preserves the raw 500-concept load."""
+        memory_path = os.path.join(os.path.dirname(__file__), '..', 'sparta', 'semantic_memory.jsonl')
+        foundation = SemanticFoundation(quarantine_placeholders=False)
+        assert foundation.load_memory(memory_path) == 500
+        assert foundation.quarantined == {}
     
     def test_load_memory_file_not_found(self):
         """Test load_memory with non-existent file."""

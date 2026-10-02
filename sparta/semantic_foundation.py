@@ -10,6 +10,7 @@ This module implements the semantic foundation for SPARTA, providing:
 
 import json
 import os
+import re
 from typing import Dict, List, Optional, Any, Set
 import networkx as nx
 from loguru import logger
@@ -29,9 +30,23 @@ class SemanticFoundation:
         domains (Set[str]): Set of all domains in the knowledge base
     """
     
-    def __init__(self):
-        """Initialize the Semantic Foundation with empty knowledge base."""
+    # Placeholder families: numbered IDs (epistemic_01, ...) sharing one template
+    # definition once digits are normalized. They carry no knowledge.
+    PLACEHOLDER_ID_RE = re.compile(r'^[a-z_]+_\d+$')
+    PLACEHOLDER_MIN_FAMILY = 3
+    
+    def __init__(self, quarantine_placeholders: bool = True):
+        """
+        Initialize the Semantic Foundation with empty knowledge base.
+        
+        Args:
+            quarantine_placeholders: Move template placeholder concepts out of the
+                active foundation on load (they stay in the file and in
+                `self.quarantined`, but are never used to answer queries)
+        """
         self.concepts: Dict[str, Dict] = {}
+        self.quarantined: Dict[str, Dict] = {}
+        self.quarantine_placeholders = quarantine_placeholders
         self.graph: nx.DiGraph = nx.DiGraph()
         self.domains: Set[str] = set()
         logger.info("🏛️ SPARTA Semantic Foundation initialized")
@@ -50,7 +65,8 @@ class SemanticFoundation:
             filepath: Path to the JSONL file containing concepts
             
         Returns:
-            Number of concepts successfully loaded
+            Number of concepts loaded into the active foundation
+            (quarantined placeholders are not counted)
             
         Raises:
             FileNotFoundError: If the file doesn't exist
@@ -94,6 +110,9 @@ class SemanticFoundation:
                     except json.JSONDecodeError as e:
                         logger.error(f"❌ Line {line_num}: JSON parse error: {e}")
                         continue
+            
+            if self.quarantine_placeholders:
+                loaded_count -= self.quarantine_placeholder_concepts()
             
             logger.info(f"✅ Loaded {loaded_count} concepts from {filepath}")
             logger.info(f"📊 Total concepts: {len(self.concepts)}")
@@ -397,6 +416,49 @@ class SemanticFoundation:
             }
         }
     
+    def find_placeholder_concepts(self) -> List[str]:
+        """
+        Detect template placeholder concepts.
+        
+        A placeholder belongs to a family of numbered IDs (e.g. epistemic_01 ..
+        epistemic_40) whose definitions are identical once digits are
+        normalized ("Epistemic concept N concerning ..."). Such entries carry no
+        knowledge; serving them as [VERIFIED] would violate SPARTA's first law.
+        
+        Returns:
+            Sorted IDs of placeholder concepts in the active foundation
+        """
+        families: Dict[str, List[str]] = {}
+        for concept_id, concept in self.concepts.items():
+            if self.PLACEHOLDER_ID_RE.match(concept_id):
+                template = re.sub(r'\d+', 'N', concept.get('definition', ''))
+                families.setdefault(template, []).append(concept_id)
+        return sorted(
+            cid for members in families.values()
+            if len(members) >= self.PLACEHOLDER_MIN_FAMILY
+            for cid in members
+        )
+    
+    def quarantine_placeholder_concepts(self) -> int:
+        """
+        Move placeholder concepts from the active foundation to quarantine.
+        
+        Nothing is deleted: quarantined concepts remain in the JSONL file and
+        in `self.quarantined`, and are listed by get_integrity_report().
+        
+        Returns:
+            Number of concepts quarantined
+        """
+        placeholders = self.find_placeholder_concepts()
+        for concept_id in placeholders:
+            self.quarantined[concept_id] = self.concepts.pop(concept_id)
+            if self.graph.has_node(concept_id):
+                self.graph.remove_node(concept_id)
+        if placeholders:
+            self.domains = {c['domain'] for c in self.concepts.values()}
+            logger.warning(f"🚧 Quarantined {len(placeholders)} placeholder concepts (not used for answers)")
+        return len(placeholders)
+    
     def find_dangling_references(self) -> Dict[str, Dict[str, List[str]]]:
         """
         Find relations and prerequisites that point to concepts not present
@@ -444,7 +506,9 @@ class SemanticFoundation:
                 missing_counts.items(), key=lambda kv: (-kv[1], kv[0])
             )[:20],
             'confidence_range': [min(confidences), max(confidences)] if confidences else [0.0, 0.0],
-            'healthy': not dangling
+            'quarantined_placeholders': len(self.quarantined),
+            'quarantined_ids': sorted(self.quarantined)[:20],
+            'healthy': not dangling and not self.quarantined
         }
     
     def get_statistics(self) -> Dict[str, Any]:
