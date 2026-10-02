@@ -268,3 +268,57 @@ numbered-ID family, and the family shares one template definition (three or more
 Distinct numbered concepts, such as `law_01` and `law_02` with different definitions, are kept.
 **Rationale.** Zero false positives on real knowledge matters more than catching subtler filler.
 Subtler filler is a curation task (EXT-028).
+
+## Supreme specification (2026-10-02)
+
+### DEC-019 · Single-sampler rule: one periodic loop feeds every observation to Thermopylae
+- **status:** accepted
+- **date:** 2026-10-02
+- **cites:** LAW-011, INT-003
+- **refines:** DEC-009
+- **evidence:** core/leonidasbrain.py, control/fractal_pipeline.py, tests/test_system_integrity.py::TestThermopylaeSingleSampler
+
+**Context.** The brain fed Thermopylae only on breach ticks, so recoveries never reset the counter,
+and the FFP fed the same counter a second time. On the pre-fix code, four *non-consecutive* breaches
+activated destruction. That violated DEC-009 and LAW-011.
+
+**Decision.** The homeostasis loop observes every tick, breach and recovery alike. The FFP defers
+breach counting while the brain runs, and keeps the capability in standalone mode (LAW-001).
+
+**Rationale.** A consecutive-run counter is well-defined only over a single, complete, periodic
+sequence of observations.
+
+### DEC-020 · The Supreme Specification is the architecture reference
+- **status:** accepted
+- **date:** 2026-10-02
+- **cites:** INT-006, LAW-003, LAW-005
+- **evidence:** docs/SUPREME_SPECIFICATION.md
+
+**Decision.** `docs/SUPREME_SPECIFICATION.md` derives the complete architecture from eight axioms
+(A1–A8). The axioms are extracted from INTENTION and LAWS. The specification covers strata, flows,
+equations E1–E25, invariants, the gap register G-01 to G-22, and derived requirements DR-1 to DR-14.
+
+**Admission rule.** A new module or mechanism is admitted only if it is logically, mathematically
+*and* necessarily required. Rejected candidates are recorded with their reasons.
+
+**Consequences.**
+- Derived requirements become EXT entries.
+- Behaviour-changing derivations wait for ratification (DEC-021).
+
+### DEC-021 · Ratify the derived forms CD-1 to CD-6
+- **status:** open
+- **date:** 2026-10-02
+- **cites:** LAW-005, DEC-020, DEC-015
+- **evidence:** docs/SUPREME_SPECIFICATION.md
+
+Each derivation fixes the *form*. The Commander chooses the constant or approves the behaviour
+change.
+
+| CD | Change | Constant to choose |
+|---|---|---|
+| CD-1 | Λ-TAS constant k = r/(r−1); today P changes Λ-TAS by ≤ 1.01% | r |
+| CD-2 | Thermopylae persistence as a duration τ, N = ⌈τ/T⌉, chosen from a false-activation budget α | α (today: 11.6%/day at p = 0.01) |
+| CD-3 | Λ-Möbius threshold κ = k·P_ref·(1 + ln U_ref); today the arbiter is always WRAP and ≈ 1 s | reference point; plus the T_Hybrid intent (DEC-015) |
+| CD-4 | SPARTA answer confidence becomes the Fréchet lower bound max(0, 1 − Σ(1 − cᵢ)), instead of min cᵢ (an upper bound) | approval of the behaviour change |
+| CD-5 | Λ-Zero signs: Λ₀ = tanh(k₁ℓ − k₂χ + k₃\|θ̇\|), with k₂ > 0.549 | k₂ |
+| CD-6 | API perimeter: refuse the default token in strict mode, CORS origins, token expiry | approval of the behaviour change |

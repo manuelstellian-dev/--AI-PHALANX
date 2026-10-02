@@ -455,3 +455,54 @@ class TestSpartaIntegration:
         unavailable = await CommandProcessor({}).process_command(
             {'type': 'sparta_query', 'payload': {'query': 'x'}})
         assert unavailable['success'] is False
+
+
+class TestThermopylaeSingleSampler:
+    """DEC-019: one periodic sampler feeds every observation to the breach counter."""
+
+    @pytest.mark.asyncio
+    async def test_recovery_between_breaches_resets_counter_in_live_loop(self):
+        import asyncio
+        samples = iter([0.90, 0.90, 1.0, 0.90, 0.90, 1.0])
+        brain = LeondasBrain({'hardware': {'cpu_cores': 4}, 'current_workload': 0.0})
+
+        class ScriptedHelot:
+            async def get_survival_probability(self):
+                try:
+                    return next(samples)
+                except StopIteration:
+                    brain.is_running = False
+                    return 1.0
+
+        with tempfile.TemporaryDirectory() as tmp:
+            thermopylae = ThermopylaeModule({'thermopylae_armed': True,
+                                             'consecutive_breaches_required': 3,
+                                             'base_path': tmp})
+            await brain.initialize_phalanx({'helot': ScriptedHelot(), 'thermopylae': thermopylae})
+            brain.calculate_lambda_tas = lambda parallelism, workload: 0.0  # no sleeping in test
+            await asyncio.wait_for(brain.homeostasis_loop(), timeout=10)
+
+        # Four breaches in total, never three in a row: must NOT activate
+        assert thermopylae.protocol_activated is False
+        assert thermopylae.consecutive_breaches == 0
+
+    @pytest.mark.asyncio
+    async def test_ffp_defers_breach_counting_to_running_brain(self):
+        from control.fractal_pipeline import FractalFluxPipeline
+        calls = []
+
+        class CountingThermopylae:
+            async def check_emergency_protocol(self, value):
+                calls.append(value)
+
+        class Brain:
+            is_running = True
+            modules = {'phalanx': {'thermopylae': CountingThermopylae()}}
+
+        ffp = FractalFluxPipeline(Brain())
+        await ffp.quarantine_threats([{'type': 'low_survival', 'severity': 'high', 'value': 0.8}])
+        assert calls == []  # the regulation loop owns the counter
+
+        Brain.is_running = False
+        await ffp.quarantine_threats([{'type': 'low_survival', 'severity': 'high', 'value': 0.8}])
+        assert calls == [0.8]  # standalone FFP keeps its capability

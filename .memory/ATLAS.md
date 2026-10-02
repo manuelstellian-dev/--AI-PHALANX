@@ -229,9 +229,11 @@ STATE-002.
 ### MAP-018 · Vision and specifications (design intent, not status)
 - **status:** active
 - **cites:** INT-001, INT-002, INT-006
-- **files:** ADVANCED_CAPABILITIES.md, TEMPORAL_COMPRESSION_MASTER_PLAN.md, docs/sparta/*
+- **files:** docs/SUPREME_SPECIFICATION.md, ADVANCED_CAPABILITIES.md, TEMPORAL_COMPRESSION_MASTER_PLAN.md, docs/sparta/*
 - **evidence:** docs/sparta/SPARTA_LAMBDA_MODULES.md
 
+- SUPREME_SPECIFICATION: the derived architecture reference (DEC-020). It contains axioms A1–A8,
+  strata S0–S7, flows F1–F9, equations E1–E25, the gap register and the optimality theorem.
 - ADVANCED_CAPABILITIES: the Λ-TAS, P and U mathematics, the Spartan Laws, hardware allocation,
   and the PQC/eBPF/mesh/ledger roadmap.
 - The master plan: temporal compression, Spartanization and the roadmap.

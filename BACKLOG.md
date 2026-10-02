@@ -272,6 +272,23 @@ prerequisites are free supervision.
 **Done when:** the families are replaced with sourced 16-field concepts, or retired by Commander
 decision. The quarantine count then reaches 0.
 
+### B-29 · Wire the inputs of U (P1)
+**Why.** `active_tasks` and `data_vault_size_mb` are never updated, so U ≡ 1 and Λ-TAS is constant
+(Supreme Specification R2, DR-2).
+
+### B-30 · Single source of truth for resource thresholds (P1)
+**Why.** The FFP uses 90/90 while Helot uses 95/90/95 (G-07, DR-7).
+
+### B-31 · Implement the ratified derived forms CD-1 to CD-6 (blocked on the Commander, `.memory` DEC-021)
+**Why.** These are the computed contradictions:
+- R1: Λ-TAS is insensitive to P.
+- R3: the Λ-Möbius arbiter is pinned to WRAP.
+- R5: N = 3 gives an 11.6% chance per day of false self-destruction at p = 0.01.
+- R6: the confidence reported is an upper bound.
+- R9: the Λ-Zero formula has a sign contradiction.
+
+Plus API hardening (CD-6). See `docs/SUPREME_SPECIFICATION.md`.
+
 > The machine-checked form of this backlog is `.memory/EXTENSIONS.md` (EXT-NNN mirrors B-NNN).
 
 ## Dependency summary

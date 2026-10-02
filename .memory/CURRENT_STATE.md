@@ -22,7 +22,7 @@
 ### STATE-002 · Quality gates
 - **status:** active
 - **cites:** LAW-002, LAW-013, MAP-015
-- **measure:** tests.functions = 607
+- **measure:** tests.functions = 609
 - **measure:** tests.modules = 16
 
 Test functions are counted statically. pytest collects more tests than that, because
@@ -72,9 +72,9 @@ is the floor that the next model version must beat (EXT-027).
 ### STATE-005 · Repository composition
 - **status:** active
 - **cites:** LAW-012, MAP-019
-- **measure:** repo.files = 134
+- **measure:** repo.files = 135
 - **measure:** repo.python_files = 73
-- **measure:** repo.markdown_files = 44
+- **measure:** repo.markdown_files = 45
 - **measure:** repo.shell_scripts = 3
 - **measure:** repo.packages = api,control,core,hoplites,logos,mnemosyne,parallel_execution,phalanx,sparta,vault
 - **measure:** config.settings_leaf_keys = 89
@@ -110,12 +110,16 @@ Everything except `/api/v1/health` requires the bearer token.
 2. **Docker build** in the agent sandbox: the network policy denies `deb.debian.org`. The image
    layout was verified by booting the server from the exact `COPY`'d tree.
 3. **T_Hybrid intent** (DEC-015): keep `(a·b)/(a+b)`, or adopt the true harmonic mean?
+4. **Ratification of CD-1 to CD-6** (DEC-021): the derived forms from the Supreme Specification.
+   The most safety-relevant is CD-2. With Thermopylae armed, if 1% of samples are critical, the
+   current N = 3 gives an 11.6% chance per day of self-destruction.
 
 ### STATE-009 · Next steps
 - **status:** active
 - **cites:** EXT-002, EXT-003, EXT-028, EXT-010, EXT-004, EXT-005
 
-The recommended order:
+The architecture reference is `docs/SUPREME_SPECIFICATION.md` (DEC-020). The recommended order:
+0. Ratify DEC-021, then implement EXT-031.
 1. Make SPARTA truthful:
    - repair the graph (EXT-002);
    - calibrate confidence (EXT-003);

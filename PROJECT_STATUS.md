@@ -207,6 +207,7 @@ See BACKLOG B-07.
 | 23 | Vault depended on an external pretrained model (HuggingFace download, torch, 5.9 GB), against the air-gap | Replaced by Λ-Logos, our own model; the external backend kept as a lazy opt-in |
 | 24 | 80 of 500 SPARTA concepts were numbered templates ("Epistemic concept N …", confidence 0.97) served as `[VERIFIED]` | Quarantined on load (file untouched, opt-out flag); SPARTA now answers from real concepts |
 | 25 | Project knowledge was scattered prose that could drift silently | `.memory/` graph with executable laws, measured state and hash-chained checkpoints; Mnemosyne in CI |
+| 26 | Thermopylae counted breaches only on breach ticks and from two loops: recoveries never reset it, so 4 non-consecutive breaches destroyed the data | Single-sampler rule (DEC-019); the regression test fails on the pre-fix code |
 | 17 | Shell: test menu ran a non-existent file; unreachable dependency check; 4 ShellCheck findings | Fixed; ShellCheck clean |
 | 18 | `prometheus.yml` used removed `bearer_token`; obsolete Compose `version` | Updated |
 | 19 | README claimed Python 3.8+; current dependencies require ≥ 3.10 | Docs and installer enforce 3.10+ |
@@ -243,6 +244,9 @@ No capability was removed: legacy behaviours are kept as explicit options. Examp
 - [docs/RAG_VECTORIAL.md](docs/RAG_VECTORIAL.md)
 - [docs/LAMBDA_MOBIUS.md](docs/LAMBDA_MOBIUS.md)
 - [docs/sparta/](docs/sparta/README.md)
+
+**Architecture reference (derived)**
+- [docs/SUPREME_SPECIFICATION.md](docs/SUPREME_SPECIFICATION.md): axioms, strata, flows, equations E1–E25, gap register, derived requirements and optimality theorem. Ratification pending: DEC-021
 
 **Vision and specification (design intent, not status)**
 - [ADVANCED_CAPABILITIES.md](ADVANCED_CAPABILITIES.md)

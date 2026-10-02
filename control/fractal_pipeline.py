@@ -201,7 +201,12 @@ class FractalFluxPipeline:
             if hasattr(self.brain, 'modules') and 'phalanx' in self.brain.modules:
                 phalanx = self.brain.modules['phalanx']
                 
-                if 'thermopylae' in phalanx:
+                # Single-sampler rule (.memory DEC-019): while the homeostasis loop runs,
+                # it alone feeds Thermopylae's consecutive-breach counter. FFP feeds it
+                # only when it runs without a regulation loop (standalone use).
+                if 'thermopylae' in phalanx and getattr(self.brain, 'is_running', False):
+                    logger.info("🛡️ QUARANTINE: breach counting owned by the homeostasis loop")
+                elif 'thermopylae' in phalanx:
                     thermopylae = phalanx['thermopylae']
                     
                     # Trigger emergency protocol for critical anomalies

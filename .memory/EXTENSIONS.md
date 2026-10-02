@@ -34,12 +34,18 @@ a rubric that maps source and verification to confidence bands, then re-score.
 
 ### EXT-004 · Key management and vault cryptography (P0)
 - **status:** planned
-- **cites:** LAW-011, DEC-008
+- **cites:** LAW-011, DEC-008, DEC-020
 
 - Derive the vault key from the master key (HKDF) or a secrets mount.
 - Move the vault to AES-256-GCM through Spartan Guard.
 - Add key rotation that re-encrypts stored data.
 - Document embedding leakage.
+
+Specification DR-13 makes two further requirements necessary:
+- **Crypto-erasure:** every secret is wrapped by the master key, so Thermopylae is guaranteed by
+  destroying one key. Overwriting files does not erase them on SSD or copy-on-write media.
+- **A per-key AES-GCM invocation counter**, with rotation before 2³² random-nonce encryptions
+  (NIST SP 800-38D).
 
 ### EXT-005 · Thermopylae reaches its targets inside Docker (P0)
 - **status:** planned
@@ -107,6 +113,10 @@ Order:
 
 The single integration point is `SpartaRuntime.query`.
 
+Specification DR-11: Λ-Guide is *necessary*. Under the Fréchet lower bound (CD-4), a verified
+answer needs Σ(1 − cᵢ) ≤ 0.05, so the minimal sufficient concept set must be selected. Build
+Λ-Guide first.
+
 ### EXT-012 · Real learning signal for Agoge (P1)
 - **status:** planned
 - **cites:** INT-003, IDN-003
@@ -114,6 +124,9 @@ The single integration point is `SpartaRuntime.query`.
 
 Replace `random.uniform` with observed outcomes: Oracle accuracy, SPARTA verification rates and
 Λ-Reflect errors.
+
+Specification DR-9: today log a is a driftless random walk (gap G-17). The learning signal must
+be π = 1 − e_t.
 
 ### EXT-013 · Model-based Battle Oracle (P1)
 - **status:** planned
@@ -138,6 +151,9 @@ probability and the FFP quarantine phase.
 
 Each anomaly type maps to a bounded, reversible and audited action, with no self-modification of
 the core.
+
+Specification DR-8: without actuators, the "homeostasis" loop is open-loop monitoring (gap G-16).
+The actuators close the loop.
 
 ### EXT-016 · Real Weapon Master client, deny-by-default (P1)
 - **status:** planned
@@ -227,6 +243,9 @@ Share gradients only between instances, on port 7301.
 Keep a hash-chained log of Thermopylae events and critical decisions, signed with ML-DSA. Mnemosyne
 checkpoints already use the same chaining pattern.
 
+Specification DR-14: the checkpoint chain is tamper-evident only while it is anchored (E22). Add
+signatures.
+
 ## New from the sovereignty session
 
 ### EXT-027 · Λ-Logos v2 — stronger semantics, still our own (P1)
@@ -247,3 +266,38 @@ model change requires a vault re-index (PRO-006).
 Author real 16-field concepts for EpistemicCore, UniversalPrinciples and ModesOfKnowledge, with
 sources and verification, or retire the families by Commander decision. The quarantine lifts
 automatically when the definitions stop being templates.
+
+## From the Supreme Specification (DEC-020)
+
+### EXT-029 · Wire the inputs of U: in-flight tasks and vault volume (P1)
+- **status:** planned
+- **cites:** INT-003, DEC-020, DEC-011
+- **evidence:** core/commandprocessor.py
+
+Specification DR-2 and result R2: `active_tasks` and `data_vault_size_mb` are never updated, so
+U ≡ a and Λ-TAS is constant at about 0.695 s.
+- Increment `active_tasks` on command entry and decrement it in `finally`.
+- Set the vault size in MB at each save.
+
+### EXT-030 · Single source of truth for resource thresholds (P1)
+- **status:** planned
+- **cites:** INT-003, LAW-003, DEC-020
+- **evidence:** control/fractal_pipeline.py
+
+Specification DR-7 and gap G-07: the FFP flags CPU and memory above 90% while Helot's configured
+critical levels are 95% CPU, 90% memory and 95% disk. The FFP should read
+`phalanx.helot.resource_thresholds`.
+
+### EXT-031 · Implement the ratified derived forms CD-1 to CD-6 (P0 once ratified)
+- **status:** blocked
+- **cites:** LAW-005, DEC-021
+- **depends_on:** EXT-003
+- **evidence:** docs/SUPREME_SPECIFICATION.md
+
+This is blocked on the Commander's ratification (DEC-021). Each change ships with a regression test
+that reproduces its computed result:
+- R1 for CD-1, Λ-TAS sensitivity to P;
+- R5 for CD-2, Thermopylae false activation;
+- R3 for CD-3, Λ-Möbius degeneration;
+- R6 for CD-4, confidence bounds;
+- R9 for CD-5, the Λ-Zero signs.

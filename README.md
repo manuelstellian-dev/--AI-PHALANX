@@ -28,6 +28,7 @@ Proiectul, lansat sub **Licența MIT**, acționează ca un **Nucleu Decizional (
 
 > 📌 **Starea reală, verificată a proiectului:** [PROJECT_STATUS.md](PROJECT_STATUS.md) · **Pașii următori:** [BACKLOG.md](BACKLOG.md)
 > 🧭 **Orice sesiune începe cu:** `python -m mnemosyne boot` — memoria canonică a proiectului este în [.memory/](.memory/README.md)
+> 📐 **Arhitectura de referință (derivată):** [docs/SUPREME_SPECIFICATION.md](docs/SUPREME_SPECIFICATION.md)
 
 ## Arhitectura Falangei
 

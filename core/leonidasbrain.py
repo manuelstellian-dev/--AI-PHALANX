@@ -143,13 +143,15 @@ class LeondasBrain:
                 if 'phalanx' in self.modules and 'helot' in self.modules['phalanx']:
                     survival_prob = await self.modules['phalanx']['helot'].get_survival_probability()
                     
-                    # Verifică protocolul Thermopylae (pragul vine din configurația Thermopylae)
+                    # Thermopylae primește FIECARE eșantion (și recuperările): contorul de
+                    # încălcări consecutive este corect doar dacă o singură buclă periodică
+                    # îl alimentează cu toate observațiile (.memory DEC-019)
                     thermopylae = self.modules['phalanx'].get('thermopylae')
                     threshold = getattr(thermopylae, 'critical_threshold', 0.95)
                     if survival_prob < threshold:
                         logger.warning(f"⚠️ Survival probability critical: {survival_prob:.2f}")
-                        if thermopylae is not None:
-                            await thermopylae.check_emergency_protocol(survival_prob)
+                    if thermopylae is not None:
+                        await thermopylae.check_emergency_protocol(survival_prob)
                 
                 # Actualizează Λ-TAS cu P (Helot) și U (CommandProcessor)
                 self.lambda_tas = self.calculate_lambda_tas(

@@ -112,7 +112,7 @@ Tokens are compared in constant time and are never logged.
 ### LAW-011 · A compromise yields nothing, and destruction needs a sustained breach
 - **status:** active
 - **cites:** INT-003
-- **enforced_by:** tests/test_system_integrity.py::TestThermopylaeSafety, tests/test_vector_store.py::test_no_plaintext_written_to_disk
+- **enforced_by:** tests/test_system_integrity.py::TestThermopylaeSafety, tests/test_system_integrity.py::TestThermopylaeSingleSampler, tests/test_vector_store.py::test_no_plaintext_written_to_disk
 
 When armed, Thermopylae destroys every configured secret: the master key file and every vault
 path. It acts only after `consecutive_breaches_required` consecutive breaches (DEC-009).

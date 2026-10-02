@@ -101,3 +101,26 @@ typed edges. The design adds:
 benchmark MRR 0.690). Recall now blends latent and lexical channels (8/10 top-3, against 7/10).
 The first checkpoint opens the CHECKPOINT chain. Open question for the Commander: T_Hybrid intent
 (DEC-015).
+
+### EVT-009 · Supreme Specification; Thermopylae single-sampler defect fixed
+- **status:** done
+- **date:** 2026-10-02
+- **cites:** DEC-019, DEC-020, DEC-021, LAW-011
+- **evidence:** docs/SUPREME_SPECIFICATION.md, tests/test_system_integrity.py::TestThermopylaeSingleSampler
+
+The forensic derivation of the complete architecture covers axioms A1–A8, strata S0–S7, flows
+F1–F9, equations E1–E25, gaps G-01 to G-22, derived requirements DR-1 to DR-14, and an optimality
+theorem relative to the axioms.
+
+**Fixed now (DEC-019).** The Thermopylae breach counter was fed only on breaches, and twice. Four
+non-consecutive breaches destroyed the data. The test reproduces this on the pre-fix code.
+
+**Computed results.**
+- Λ-TAS depends on P by at most 1.01%.
+- U ≡ 1 at runtime.
+- Λ-Möbius is always WRAP and about 1 s.
+- N = 3 gives an 11.6% chance per day of false activation at p = 0.01.
+- SPARTA reports the upper Fréchet bound as its confidence.
+- The Λ-Zero formula has a sign contradiction.
+
+The behaviour-changing corrections await the Commander (DEC-021).
