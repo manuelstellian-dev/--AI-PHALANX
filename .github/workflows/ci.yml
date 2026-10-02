@@ -1,0 +1,55 @@
+# ΛΕΩΝΙΔΑΣ-AI PHALANX - Integrare Continuă
+# Lint (ruff, shellcheck), teste cu avertismente tratate ca erori, și build Docker real.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint & tests (Python 3.11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies (CPU-only PyTorch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: ShellCheck
+        run: shellcheck scripts/*.sh
+
+      - name: Tests (warnings are errors)
+        run: python -m pytest -q -W error --cov=. --cov-config=.coveragerc --cov-report=term
+
+  docker:
+    name: Docker image builds and serves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t leonidas-ai-phalanx:ci .
+
+      - name: Start container and check health
+        run: |
+          docker run -d --name leonidas -p 7300:7300 leonidas-ai-phalanx:ci
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:7300/api/v1/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs leonidas
+          exit 1

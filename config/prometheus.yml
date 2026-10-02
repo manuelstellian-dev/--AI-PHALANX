@@ -20,7 +20,11 @@ scrape_configs:
   - job_name: 'leonidas-api'
     metrics_path: '/api/v1/metrics'
     scheme: 'http'
-    bearer_token: 'SPARTA300_SECRET_TOKEN'
+    # Trebuie să coincidă cu SPARTA_AUTH_TOKEN al serviciului leonidas-core.
+    # 'authorization' înlocuiește câmpul învechit 'bearer_token' (eliminat în Prometheus 3).
+    authorization:
+      type: Bearer
+      credentials: 'SPARTA300_SECRET_TOKEN'
     static_configs:
       - targets: ['leonidas-core:7300']
         labels:

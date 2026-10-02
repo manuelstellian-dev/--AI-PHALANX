@@ -24,11 +24,16 @@ echo ""
 
 # Verifică Python 3
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python 3 is not installed. Please install Python 3.8 or higher.${NC}"
+    echo -e "${RED}❌ Python 3 is not installed. Please install Python 3.10 or higher.${NC}"
     exit 1
 fi
 
 PYTHON_VERSION=$(python3 --version | awk '{print $2}')
+# sentence-transformers / torch (RAG Vectorial) necesită Python >= 3.10
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then
+    echo -e "${RED}❌ Python $PYTHON_VERSION found, but 3.10 or higher is required.${NC}"
+    exit 1
+fi
 echo -e "${GREEN}✅ Python $PYTHON_VERSION found${NC}"
 
 # Creează mediul virtual sparta-env
@@ -42,6 +47,7 @@ fi
 
 # Activează mediul virtual
 echo "⚡ Activating virtual environment..."
+# shellcheck source=/dev/null  # mediu virtual creat mai sus
 source sparta-env/bin/activate
 
 # Upgrade pip
@@ -60,6 +66,7 @@ fi
 
 # Creează directoare necesare
 echo "📁 Creating necessary directories..."
+mkdir -p data/vault
 mkdir -p data/encrypted_vault
 mkdir -p logs
 mkdir -p config

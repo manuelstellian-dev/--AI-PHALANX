@@ -5,13 +5,10 @@
 echo "🧪 Running tests with coverage..."
 echo "=================================="
 
-# Rulează pytest cu coverage
-pytest --cov=. --cov-report=html --cov-report=term \
+# Rulează pytest cu coverage și verifică direct exit code-ul
+if pytest --cov=. --cov-report=html --cov-report=term \
     --cov-config=.coveragerc \
-    -v
-
-# Verifică exit code
-if [ $? -eq 0 ]; then
+    -v; then
     echo ""
     echo "✅ Tests completed successfully!"
     echo "📊 Coverage report generated in htmlcov/index.html"

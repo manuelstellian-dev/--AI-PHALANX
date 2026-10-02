@@ -1,7 +1,6 @@
 # ΛΕΩΝΙΔΑΣ-AI PHALANX - Docker Compose Configuration
 # Orchestrare pentru Falanga Digitală și servicii de suport
-
-version: '3.8'
+# (cheia 'version' a fost eliminată - este ignorată și semnalată ca învechită de Compose v2)
 
 services:
   # Serviciul principal ΛΕΩΝΙΔΑΣ-AI
@@ -16,6 +15,8 @@ services:
     environment:
       - SPARTA_AUTH_TOKEN=${SPARTA_AUTH_TOKEN:-SPARTA300_SECRET_TOKEN}
       - PYTHONUNBUFFERED=1
+      # Opțional: cheia vault-ului din mediu (altfel data/vault/encryption.key)
+      - SPARTA_VAULT_KEY=${SPARTA_VAULT_KEY:-}
     volumes:
       - ./config:/app/config:ro
       - ./data:/app/data
@@ -34,6 +35,7 @@ services:
       - postgres-armory
 
   # Redis - Fortăreața Cache-ului de Memorie
+  # REZERVAT: nu este încă folosit de cod (vezi BACKLOG.md - persistență)
   redis-fortress:
     image: redis:7-alpine
     container_name: redis-fortress
@@ -47,6 +49,7 @@ services:
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-sparta_redis_secret}
 
   # PostgreSQL - Armurăria de Date Persistente
+  # REZERVAT: nu este încă folosit de cod (vezi BACKLOG.md - persistență)
   postgres-armory:
     image: postgres:15-alpine
     container_name: postgres-armory

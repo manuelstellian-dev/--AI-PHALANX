@@ -46,6 +46,7 @@ fi
 # Verifică dacă mediul virtual este activat
 if [ -z "$VIRTUAL_ENV" ]; then
     echo -e "${YELLOW}⚡ Activating virtual environment...${NC}"
+    # shellcheck source=/dev/null  # mediu virtual generat de install_sparta.sh
     source sparta-env/bin/activate
 fi
 
@@ -53,8 +54,8 @@ echo -e "${GREEN}✅ Virtual environment active${NC}"
 
 # Verifică dependențele
 echo -e "${BLUE}🔍 Checking dependencies...${NC}"
-python3 -c "import fastapi, uvicorn, loguru, yaml, cryptography" 2>/dev/null
-if [ $? -eq 0 ]; then
+# (testul direct în 'if' - cu 'set -e', un '$?' separat nu ar mai fi atins la eșec)
+if python3 -c "import fastapi, uvicorn, loguru, yaml, cryptography, sentence_transformers, networkx" 2>/dev/null; then
     echo -e "${GREEN}✅ All dependencies available${NC}"
 else
     echo -e "${RED}❌ Missing dependencies. Run: bash scripts/install_sparta.sh${NC}"
@@ -69,7 +70,7 @@ fi
 # Verifică cheile criptografice
 if [ ! -f "config/spartan_keys.yaml" ]; then
     echo -e "${YELLOW}⚠️  spartan_keys.yaml not found${NC}"
-    echo -e "${YELLOW}   Cryptographic keys will be generated automatically${NC}"
+    echo -e "${YELLOW}   Spartan Guard will use a temporary key - run: python scripts/generate_keys.py${NC}"
 fi
 
 # Afișează informații despre sistem
@@ -77,8 +78,12 @@ echo ""
 echo -e "${MAGENTA}🏛️  System Configuration:${NC}"
 echo -e "   • API Port: ${GREEN}7300${NC}"
 echo -e "   • Air-Gap Mode: ${GREEN}STRICT${NC}"
-echo -e "   • Encryption: ${GREEN}AES-256-GCM${NC}"
-echo -e "   • Auth Token: ${YELLOW}SPARTA300_SECRET_TOKEN${NC} (change in production!)"
+echo -e "   • Encryption: ${GREEN}AES-256-GCM${NC} (Spartan Guard), Fernet (Vault)"
+if [ -n "$SPARTA_AUTH_TOKEN" ]; then
+    echo -e "   • Auth Token: ${GREEN}from SPARTA_AUTH_TOKEN${NC}"
+else
+    echo -e "   • Auth Token: ${YELLOW}SPARTA300_SECRET_TOKEN${NC} (default - change in production!)"
+fi
 echo ""
 
 # Opțiuni de pornire
@@ -89,7 +94,7 @@ echo "   3) Run Tests"
 echo "   4) Show System Status"
 echo "   5) Exit"
 echo ""
-read -p "Enter your choice [1-5]: " choice
+read -r -p "Enter your choice [1-5]: " choice
 
 case $choice in
     1)
@@ -110,6 +115,8 @@ case $choice in
         echo ""
         if [ -f "tests/run_tests.py" ]; then
             python3 tests/run_tests.py
+        elif [ -d "tests" ]; then
+            python3 -m pytest tests/ -q
         else
             echo -e "${YELLOW}⚠️  No tests found${NC}"
         fi

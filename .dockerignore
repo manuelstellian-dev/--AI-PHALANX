@@ -1,0 +1,15 @@
+# Context minim pentru build - fără secrete, date locale sau artefacte
+.git
+.github
+**/__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+htmlcov
+.coverage
+sparta-env
+venv
+.venv
+data
+logs
+config/spartan_keys.yaml
